@@ -82,24 +82,45 @@ export function groupByStation(records: CPCBRecord[]): CPCBRecord[][] {
   return [...groups.values()].filter((g) => g.length > 0);
 }
 
-export async function fetchCPCBRecords(apiKey: string): Promise<CPCBRecord[]> {
+export async function fetchCPCBRecords(apiKey: string, limit: number = 2000): Promise<CPCBRecord[]> {
   const url = new URL(`https://api.data.gov.in/resource/${CPCB_RESOURCE_ID}`);
   url.searchParams.set("api-key", apiKey);
   url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "2000");
+  url.searchParams.set("limit", String(limit));
 
-  try {
-    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-    if (!res.ok) {
-      console.warn("[cpcb] HTTP", res.status);
-      return [];
+  const allRecords: CPCBRecord[] = [];
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    url.searchParams.set("offset", String(offset));
+
+    try {
+      const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+      if (!res.ok) {
+        console.warn("[cpcb] HTTP", res.status);
+        break;
+      }
+      const data = (await res.json()) as CPCBEnvelope;
+      const records = Array.isArray(data.records) ? data.records : [];
+
+      if (records.length === 0) {
+        hasMore = false;
+      } else {
+        allRecords.push(...records);
+        offset += records.length;
+        // If we got fewer results than we requested, assume we're at the end
+        if (records.length < limit) {
+          hasMore = false;
+        }
+      }
+    } catch (err) {
+      console.warn("[cpcb] fetch failed at offset", offset, ":", err);
+      break;
     }
-    const data = (await res.json()) as CPCBEnvelope;
-    return Array.isArray(data.records) ? data.records : [];
-  } catch (err) {
-    console.warn("[cpcb] fetch failed:", err);
-    return [];
   }
+
+  return allRecords;
 }
 
 /**
@@ -137,6 +158,8 @@ export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: numbe
     station_name: name,
     source: "cpcb",
     attribution: [head.city, head.state].filter(Boolean).join(", ") || "CPCB",
+    city: head.city || undefined,
+    state: head.state || undefined,
     concentrations,
     measurement_timestamp: new Date(parsedTs).toISOString(),
     reliability: "Measured",

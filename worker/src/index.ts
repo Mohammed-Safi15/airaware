@@ -1,6 +1,7 @@
 import type { Env } from "./bindings.js";
 import { fetchCPCBRecords, buildCPCBStation, groupByStation } from "./lib/fetchers/cpcb.js";
 import { fetchOpenAQLocations, buildOpenAQStation } from "./lib/fetchers/openaq.js";
+import { fetchOpenMeteo, buildOpenMeteoStation } from "./lib/fetchers/open-meteo.js";
 import { toNAQI, category } from "./lib/nqi.js";
 import type { AQResponse, StationObservation, Reliability } from "./types/aq.js";
 
@@ -118,6 +119,11 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
     return json({ error: "Coordinates out of range." }, 400);
   }
 
+  // India bounding box: lat 8-35, lng 68-97
+  if (lat < 8 || lat > 35 || lng < 68 || lng > 97) {
+    return json({ error: "Coordinates must be within India (approx. bounding box 68°E–97°E, 8°N–35°N)." }, 400);
+  }
+
   // Cache key: rounded ~4 decimal places is ~10 m resolution, plenty for AQI.
   const cacheKey = `/api/aqi?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}`;
 
@@ -160,6 +166,20 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
     if (locations.length > 0 && alternatives.length === 0) console.log("[aqi]   → all openaq locations had zero measurements");
   } else if (env.OPENAQ_API_KEY) {
     console.log("[aqi] skipping OpenAQ — already have CPCB stations");
+  }
+
+  // Neighborhood fallback: Add Open-Meteo if we still have no CPCB stations.
+  if (alternatives.length === 0) {
+    console.log("[aqi] falling back to Open-Meteo neighborhood keyword API (zero-key)");
+    const records = await fetchOpenMeteo(lat, lng);
+    console.log(`[aqi] open-meteo returned ${records.length} record(s)`);
+    const obs = buildOpenMeteoStation(lat, lng, records);
+    if (obs) {
+      console.log(`[aqi]   station: ${obs.station_name} dist=${obs.distance_km}km polls=${Object.keys(obs.concentrations).join(',')}`);
+      // Open-Meteo is always Estimated since it's not a station-specific reading.
+    } else {
+      console.log("[aqi]   → open-meteo returned no pollutant data");
+    }
   }
 
   // Sort by proximity, take the nearest as primary, classify reliability.

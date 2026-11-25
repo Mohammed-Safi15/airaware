@@ -4,6 +4,7 @@ import { SearchBar } from "../components/SearchBar";
 import { SavedLocations } from "../components/SavedLocations";
 import { MapPin } from "lucide-react";
 import { useAuth } from "../App";
+import type { AQResponse } from "../types/aq";
 
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946;
@@ -39,6 +40,16 @@ export function LocationsPage() {
       );
     } else {
       alert("Geolocation is not supported by your browser");
+    }
+  }
+
+  async function fetchAQI(lat: number, lng: number): Promise<AQResponse | null> {
+    try {
+      const res = await fetch(`/api/aqi?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`);
+      if (!res.ok) return null;
+      return (await res.json()) as AQResponse;
+    } catch {
+      return null;
     }
   }
 
@@ -82,7 +93,7 @@ export function LocationsPage() {
       />
 
       {/* Saved Locations CRUD */}
-      <SavedLocations userId={user?.id ?? ''} onLocationSelect={handleLocationSelectFromList} />
+      <SavedLocations userId={user?.id ?? ''} onLocationSelect={handleLocationSelectFromList} fetchAQI={fetchAQI} />
     </div>
   );
 }

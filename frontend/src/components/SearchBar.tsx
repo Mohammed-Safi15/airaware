@@ -20,47 +20,67 @@ interface SearchBarProps {
 async function searchPlaces(query: string): Promise<SearchResult[]> {
   if (!query || query.trim().length < 3) return [];
 
-  // Try Photon first (no API key required)
+  const trimmed = query.trim();
+
+  // Try Photon first with countrycode=IN and India bounding box (approx lat 8-35, lng 68-97)
   try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8`;
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&limit=8&countrycode=in`;
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (res.ok) {
       const data = await res.json();
       const features = Array.isArray(data.features) ? data.features : [];
-      return features
+      const hits = features
         .map((f: { geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown>; display_name?: string }) => {
           const coords = f.geometry?.coordinates as [number, number] | undefined;
           const props = f.properties ?? {};
           if (!coords || !Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) return null;
+          // Restrict strictly to India bbox: lat 8-35, lng 68-97
+          if (coords[1] < 8 || coords[1] > 35 || coords[0] < 68 || coords[0] > 35 + 62 /* 97 */) return null;
           return {
             place_id: (props.place_id as number) ?? Math.random() * 1e9,
             lat: String(coords[1]),
             lon: String(coords[0]),
-            display_name: String(props.name ?? props.city ?? props.town ?? props.village ?? f.display_name ?? query),
+            display_name: [props.name, props.city || props.state, props.country].filter(Boolean).join(", ") || String(props.name ?? f.display_name ?? trimmed),
             type: String(props.type ?? "locality"),
             importance: Number(props.importance ?? 0),
           } satisfies SearchResult;
         })
         .filter(Boolean) as SearchResult[];
+
+      if (hits.length > 0) return hits;
     }
   } catch {
     // Fall through to Nominatim
   }
 
-  // Fallback to Nominatim
+  // Fallback to Nominatim with countrycodes=in and viewbox for India
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}&limit=8&countrycodes=in&viewbox=68,35,97,8&bounded=1&addressdetails=1`;
     const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "AirAware/1.0" } });
     if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
-    return (await res.json())
-      .map((r: { lat: string; lon: string; display_name: string }) => ({
+    const raw = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
+
+    // If fewer than 2 results and query has specific suffixes (gate, entrance, etc.), retry with stripped query
+    if (raw.length < 2 && /(gate|entrance|rd|road|block|sec|sector)/i.test(trimmed)) {
+      const cleaned = trimmed.replace(/(gate|entrance|block|sec|sector)\s*[\w-]*/gi, "").trim();
+      if (cleaned.length >= 3 && cleaned !== trimmed) {
+        return searchPlaces(cleaned);
+      }
+    }
+
+    return raw
+      .map((r) => ({
         place_id: Math.random() * 1e9,
         lat: r.lat,
         lon: r.lon,
         display_name: r.display_name,
         type: "search_result",
       }))
-      .filter((r: SearchResult) => Number.isFinite(parseFloat(r.lat)) && Number.isFinite(parseFloat(r.lon)));
+      .filter((r) => {
+        const lat = parseFloat(r.lat);
+        const lng = parseFloat(r.lon);
+        return Number.isFinite(lat) && Number.isFinite(lng) && lat >= 8 && lat <= 35 && lng >= 68 && lng <= 97;
+      });
   } catch {
     return [];
   }

@@ -16,6 +16,10 @@ export interface StationObservation {
   source: string;
   /** URL/label pointing back to the original report if available. */
   attribution?: string;
+  /** Optional administrative locality (city) when available from upstream. */
+  city?: string;
+  /** Optional state/union-territory when available from upstream. */
+  state?: string;
   /** Pollutant readings. Keys are lowercase aliases recognised by nqi.ts. */
   concentrations: PollutantConcentration;
   /** When the measuring instrument logged the reading (ISO-8601). */
@@ -41,5 +45,7 @@ export interface AQResponse {
     naqi: number;
     subIndices: Record<string, number>;
     category: { label: string; color: string };
+    /** City/state of the query point (prefilled when primary provides them). */
+    locality?: string;
   };
 }

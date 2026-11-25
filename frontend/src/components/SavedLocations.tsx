@@ -1,16 +1,47 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import type { SavedLocationRow, LocationType } from "../lib/supabase";
-import { Plus, Trash2, MapPin, Edit2, Save, X } from "lucide-react";
+import { Plus, Trash2, MapPin, Edit2, Save, X, Wind } from "lucide-react";
+import type { AQResponse } from "../types/aq";
+
+// India bounding box for validation
+const INDIA_LAT_MIN = 8, INDIA_LAT_MAX = 35, INDIA_LNG_MIN = 68, INDIA_LNG_MAX = 97;
 
 interface SavedLocationsProps {
   userId: string;
+  /** Called when a location is selected — pass coords back to the map */
   onLocationSelect: (lat: number, lng: number, name: string) => void;
+  /** Optional: fetch AQI given lat/lng — if provided, badges render inline */
+  fetchAQI?: (lat: number, lng: number) => Promise<AQResponse | null>;
 }
 
-export function SavedLocations({ userId, onLocationSelect }: SavedLocationsProps) {
+interface LocationAQI {
+  naqi: number;
+  categoryLabel: string;
+  color: string;
+}
+
+/** NAQI colour helpers (must mirror worker/src/lib/nqi.ts logic) */
+function naqiCategory(naqi: number): { label: string; color: string } {
+  if (naqi <= 50) return { label: "Good", color: "#16a34a" };       // green-600
+  if (naqi <= 100) return { label: "Satisfactory", color: "#ca8a04" }; // yellow-600
+  if (naqi <= 200) return { label: "Moderate", color: "#ea580c" };   // orange-600
+  if (naqi <= 300) return { label: "Poor", color: "#dc2626" };       // red-600
+  if (naqi <= 400) return { label: "Very Poor", color: "#7c3aed" };  // violet-600
+  return { label: "Severe", color: "#7f1d1d" };                     // red-900
+}
+
+function getNAQIBadge(aqiData: AQResponse | null): LocationAQI | null {
+  if (!aqiData?._meta?.naqi || aqiData._meta.naqi < 0) return null;
+  const cat = naqiCategory(aqiData._meta.naqi);
+  return { naqi: aqiData._meta.naqi, categoryLabel: cat.label, color: cat.color };
+}
+
+export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLocationsProps) {
   const [locations, setLocations] = useState<SavedLocationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aqis, setAqis] = useState<Map<string, AQResponse | null>>(new Map());
+  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -34,6 +65,35 @@ export function SavedLocations({ userId, onLocationSelect }: SavedLocationsProps
 
       if (error) throw error;
       setLocations(data ?? []);
+
+      // Pre-fetch AQI for all loaded locations if fetchAQI is available
+      if (fetchAQI) {
+        const ids = new Set<string>();
+        const pendingPromises = (data ?? []).map(async (loc) => {
+          if (!Number.isFinite(loc.latitude) || !Number.isFinite(loc.longitude)) return;
+          if (loc.latitude < INDIA_LAT_MIN || loc.latitude > INDIA_LAT_MAX ||
+              loc.longitude < INDIA_LNG_MIN || loc.longitude > INDIA_LNG_MAX) return;
+          ids.add(loc.id);
+          setFetchingIds(ids);
+          try {
+            const result = await fetchAQI(loc.latitude, loc.longitude);
+            setAqis((prev) => {
+              const next = new Map(prev);
+              next.set(loc.id, result);
+              return next;
+            });
+          } catch {
+            // Leave without entry — no badge shown
+          } finally {
+            setFetchingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(loc.id);
+              return next;
+            });
+          }
+        });
+        await Promise.all(pendingPromises);
+      }
     } catch (error) {
       console.error("Failed to load locations:", error);
     } finally {
@@ -103,6 +163,23 @@ export function SavedLocations({ userId, onLocationSelect }: SavedLocationsProps
       return;
     }
     await loadLocations();
+  }
+
+  async function handleClick(loc: SavedLocationRow) {
+    onLocationSelect(loc.latitude, loc.longitude, loc.location_name);
+    // If fetchAQI is available, re-fetch on explicit click for instant badge
+    if (fetchAQI && Number.isFinite(loc.latitude) && Number.isFinite(loc.longitude)) {
+      try {
+        const result = await fetchAQI(loc.latitude, loc.longitude);
+        setAqis((prev) => {
+          const next = new Map(prev);
+          next.set(loc.id, result);
+          return next;
+        });
+      } catch {
+        // ignore
+      }
+    }
   }
 
   function cancelForm() {
@@ -214,51 +291,75 @@ export function SavedLocations({ userId, onLocationSelect }: SavedLocationsProps
         </div>
       ) : (
         <div className="space-y-2">
-          {locations.map((loc) => (
-            <div
-              key={loc.id}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:shadow-sm transition-shadow"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sky-600">
-                  <MapPin className="h-4 w-4" />
+          {locations.map((loc) => {
+            const aqiData = aqis.get(loc.id) ?? null;
+            const badge = getNAQIBadge(aqiData);
+            const fetching = fetchingIds.has(loc.id);
+            return (
+              <div
+                key={loc.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: badge ? `${badge.color}20` : "#f0f9ff", borderColor: badge ? badge.color : undefined }}
+                  >
+                    {fetching ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-sky-300 border-t-sky-600 inline-block" />
+                    ) : badge ? (
+                      <span
+                        className="text-xs font-bold text-white"
+                        style={{ color: badge.color }}
+                      >
+                        {badge.naqi}
+                      </span>
+                    ) : (
+                      <Wind className="h-4 w-4 text-sky-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">{loc.location_name}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)} · {loc.location_type}
+                    </p>
+                    {badge && (
+                      <p className="mt-0.5 text-xs font-medium" style={{ color: badge.color }}>
+                        {badge.categoryLabel} · NAQI {badge.naqi}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-900">{loc.location_name}</p>
-                  <p className="truncate text-xs text-slate-500">
-                    {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)} · {loc.location_type}
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => onLocationSelect(loc.latitude, loc.longitude, loc.location_name)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-sky-600 transition-colors"
-                  title="Select this location"
-                >
-                  <MapPin className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startEdit(loc)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-amber-600 transition-colors"
-                  title="Edit location"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(loc.id)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  title="Delete location"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <button
+                    type="button"
+                    onClick={() => handleClick(loc)}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-sky-600 transition-colors"
+                    title="Select this location"
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(loc)}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-amber-600 transition-colors"
+                    title="Edit location"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(loc.id)}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Delete location"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

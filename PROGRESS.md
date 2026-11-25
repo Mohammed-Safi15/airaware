@@ -61,6 +61,15 @@
 - [x] User geolocation ("Use My Location" button) ✅
 - [x] `tsc --noEmit` clean; `npx vite build` passes ✅
 - [x] **Phase 3 Exit Gate**: Verified — auth crash fixed via AuthCtx, Leaflet DOM hierarchy resolved in MapView.tsx (no more HierarchyRequestError), tsc clean, vite build passes; user has completed interactive verification of map + search + saved locations CRUD ✅
+- [x] India-only bounding box enforcement on worker `/api/aqi` (lat 8–35, lng 68–97, 400 for out-of-bounds) ✅
+- [x] Paginated CPCB fetch (offset loop) to bypass 1000-record cap ✅
+- [x] Open-Meteo zero-key fallback integrated as neighborhood-level proxy ✅
+- [x] City/state fields propagated from CPCB data to AQResponse and rendered in frontend badges ✅
+- [x] Frontend geocoding restricted to India only (countrycode=in, viewbox + bounded for Nominatim, post-filter with India list) ✅
+- [x] Micro-landmark retry logic in SearchBar when initial query lacks precise locality ✅
+- [x] NAQI badge color-coding on SavedLocations cards mirroring nqi.ts categories (Good ≤50 … Severe >400) ✅
+- [x] Auto-fetch AQI on saved-location load and explicit click ✅
+- [x] Final `tsc --noEmit` clean on both worker and frontend; `npm run build` passes ✅
 
 ### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
 - [ ] Dashboard & Live AQI Monitoring widget with provenance badges

@@ -10,6 +10,10 @@ export interface StationObservation {
   station_name: string;
   source: string;
   attribution?: string;
+  /** Optional city extracted from upstream. */
+  city?: string;
+  /** Optional state extracted from upstream. */
+  state?: string;
   concentrations: PollutantConcentration;
   measurement_timestamp: string;
   reliability: Reliability;
@@ -26,5 +30,6 @@ export interface AQResponse {
     naqi: number;
     subIndices: Record<string, number>;
     category: { label: string; color: string };
+    locality?: string;
   };
 }
