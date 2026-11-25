@@ -13,6 +13,10 @@ interface SavedLocationsProps {
   onLocationSelect: (lat: number, lng: number, name: string) => void;
   /** Optional: fetch AQI given lat/lng — if provided, badges render inline */
   fetchAQI?: (lat: number, lng: number) => Promise<AQResponse | null>;
+  /** Optional default lat/lng from map click or search; pre-populates form silently */
+  defaultLat?: number;
+  /** Optional default lat/lng from map click or search; pre-populates form silently */
+  defaultLng?: number;
 }
 
 interface LocationAQI {
@@ -37,19 +41,31 @@ function getNAQIBadge(aqiData: AQResponse | null): LocationAQI | null {
   return { naqi: aqiData._meta.naqi, categoryLabel: cat.label, color: cat.color };
 }
 
-export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLocationsProps) {
+export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat, defaultLng }: SavedLocationsProps) {
   const [locations, setLocations] = useState<SavedLocationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [aqis, setAqis] = useState<Map<string, AQResponse | null>>(new Map());
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{ location_name: string; location_type: "Other" | "Home" | "Office" | "College"; latitude: string; longitude: string }>({
     location_name: "",
+    location_type: "Other",
     latitude: "",
     longitude: "",
-    location_type: "Other" as LocationType,
   });
+
+  // Initialize form with default lat/lng from map click / search if provided
+  useEffect(() => {
+    if (defaultLat !== undefined && defaultLng !== undefined) {
+      setFormData({
+        location_name: "",
+        location_type: "Other",
+        latitude: "",
+        longitude: "",
+      });
+    }
+  }, [defaultLat, defaultLng]);
 
   useEffect(() => {
     loadLocations();
@@ -103,8 +119,11 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const lat = parseFloat(formData.latitude);
-    const lng = parseFloat(formData.longitude);
+    const target = e.target as HTMLFormElement;
+    const latInput = target.querySelector('input[name="latitude"]') as HTMLInputElement;
+    const lngInput = target.querySelector('input[name="longitude"]') as HTMLInputElement;
+    const lat = parseFloat(latInput?.value ?? "");
+    const lng = parseFloat(lngInput?.value ?? "");
 
     if (!formData.location_name.trim() || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
@@ -140,7 +159,7 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
       }
     }
 
-    setFormData({ location_name: "", latitude: "", longitude: "", location_type: "Other" });
+    setFormData({ location_name: "", location_type: "Other", latitude: "", longitude: "" });
     setShowForm(false);
     await loadLocations();
   }
@@ -149,9 +168,9 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
     setEditingId(loc.id);
     setFormData({
       location_name: loc.location_name,
+      location_type: loc.location_type,
       latitude: String(loc.latitude),
       longitude: String(loc.longitude),
-      location_type: loc.location_type,
     });
     setShowForm(true);
   }
@@ -185,7 +204,7 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
   function cancelForm() {
     setShowForm(false);
     setEditingId(null);
-    setFormData({ location_name: "", latitude: "", longitude: "", location_type: "Other" });
+    setFormData({ location_name: "", location_type: "Other", latitude: "", longitude: "" });
   }
 
   if (loading) {
@@ -226,25 +245,12 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Latitude</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Location Name</label>
               <input
-                type="number"
-                step="any"
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                placeholder="12.9716"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                placeholder="77.5946"
+                type="text"
+                value={formData.location_name}
+                onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
+                placeholder="e.g., Home, Office, College"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                 required
               />
@@ -264,6 +270,19 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI }: SavedLoca
               <option value="Other">Other</option>
             </select>
           </div>
+
+          <input
+            type="hidden"
+            name="latitude"
+            value={formData.latitude || ""}
+            defaultValue={formData.latitude || ""}
+          />
+          <input
+            type="hidden"
+            name="longitude"
+            value={formData.longitude || ""}
+            defaultValue={formData.longitude || ""}
+          />
 
           <div className="flex justify-end gap-2">
             <button

@@ -1,4 +1,4 @@
-import type { PollutantConcentration } from "../nqi.js";
+import type { PollutantConcentration, ConcentrationMetadata } from "../nqi.js";
 import type { StationObservation } from "../../types/aq.js";
 import { haversineMetres } from "../haversine.js";
 
@@ -126,6 +126,8 @@ export async function fetchCPCBRecords(apiKey: string, limit: number = 2000): Pr
 /**
  * Build a single StationObservation from a bucket of CPCB rows that share a
  * station. Never substitutes zero for a missing pollutant (PRD guardrail).
+ * CPCB CO values arrive as pre-computed 0–500 NAQI sub-indices, so we flag
+ * them via concentrationMeta.coIsSubIndex to skip breakpoint recalculation.
  */
 export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: number): StationObservation | null {
   if (bucket.length === 0) return null;
@@ -139,12 +141,22 @@ export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: numbe
 
   // Resolve pollutant concentrations from whichever buckets contain them.
   const concentrations: PollutantConcentration = {};
+  let hasCoReading = false;
   for (const [key, pid] of POLLUTANT_COLUMNS) {
     const match = bucket.find((r) => r.pollutant_id?.toUpperCase() === pid.toUpperCase());
     const val = match ? parseVal(match.avg_value) : undefined;
-    if (val !== undefined) concentrations[key as keyof PollutantConcentration] = val;
+    if (val !== undefined) {
+      concentrations[key as keyof PollutantConcentration] = val;
+      if (key === "co") hasCoReading = true;
+    }
   }
   if (Object.keys(concentrations).length === 0) return null; // nothing to report
+
+  // CPCB reports CO avg_value as a pre-broken-down 0–500 NAQI sub-index.
+  // Mark it so toNAQI uses it directly without re-applying breakpoints.
+  const concentrationMeta: ConcentrationMetadata | undefined = hasCoReading
+    ? { coIsSubIndex: true }
+    : undefined;
 
   // Parse DD-MM-YYYY HH:MM:SS (Indian national standard format used by CPCB).
   // JS Date.parse does NOT recognise this format — manual parse is required.
@@ -161,6 +173,7 @@ export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: numbe
     city: head.city || undefined,
     state: head.state || undefined,
     concentrations,
+    concentrationMeta,
     measurement_timestamp: new Date(parsedTs).toISOString(),
     reliability: "Measured",
     distance_km: Number((distM / 1000).toFixed(3)),

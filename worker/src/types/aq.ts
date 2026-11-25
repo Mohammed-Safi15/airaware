@@ -1,4 +1,4 @@
-import type { PollutantConcentration } from "../lib/nqi.js";
+import type { PollutantConcentration, ConcentrationMetadata } from "../lib/nqi.js";
 
 // ---------------------------------------------------------------------------
 // Shared response shapes used throughout this phase. Kept lightweight because
@@ -22,12 +22,18 @@ export interface StationObservation {
   state?: string;
   /** Pollutant readings. Keys are lowercase aliases recognised by nqi.ts. */
   concentrations: PollutantConcentration;
+  /** Source-specific metadata (e.g. CPCB marks CO as pre-sub-indexed). */
+  concentrationMeta?: ConcentrationMetadata;
   /** When the measuring instrument logged the reading (ISO-8601). */
   measurement_timestamp: string;
   /** How fresh / trustworthy the datum is. */
   reliability: Reliability;
   /** Distance from the caller-supplied query lat/lng, in km (rounded to 3 dp). */
   distance_km: number;
+  /** IDW-weighted AQI estimate across nearby stations (populated by dashboard when relevant). */
+  idw_aqi?: number;
+  /** List of station IDs contributing to the IDW estimate. */
+  idw_contributors?: string[];
 }
 
 export interface AQResponse {

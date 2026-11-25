@@ -19,10 +19,10 @@ export function LocationsPage() {
     setMapCenter({ lat, lng });
   }
 
-  function handleLocationSelectFromList(_lat: number, _lng: number, _name: string) {
-    // Map centering is handled by SavedLocations via onLocationSelect if needed;
-    // this placeholder keeps the prop signature valid.
-  }
+  function handleLocationSelectFromList(lat: number, lng: number, name: string) {
+    setSelectedLoc({ lat, lng, name });
+    setMapCenter({ lat, lng });
+}
 
   function useMyLocation() {
     if ("geolocation" in navigator) {
@@ -93,7 +93,13 @@ export function LocationsPage() {
       />
 
       {/* Saved Locations CRUD */}
-      <SavedLocations userId={user?.id ?? ''} onLocationSelect={handleLocationSelectFromList} fetchAQI={fetchAQI} />
+      <SavedLocations
+        userId={user?.id ?? ''}
+        onLocationSelect={handleLocationSelectFromList}
+        fetchAQI={fetchAQI}
+        defaultLat={mapCenter.lat}
+        defaultLng={mapCenter.lng}
+      />
     </div>
   );
 }

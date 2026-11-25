@@ -12,12 +12,22 @@
  * simply omit its sub-index contribution so it cannot drag the average down.
  */
 
+/**
+ * Extra metadata carried alongside concentrations to distinguish sources.
+ * CPCB reports CO as a pre-computed 0–500 NAQI sub-index (not raw mg/m³);
+ * this flag lets toNAQI skip the breakpoint lookup for such values.
+ */
+export interface ConcentrationMetadata {
+  /** true when CO was provided by CPCB as an already-broken-down 0–500 sub-index */
+  coIsSubIndex?: boolean;
+}
+
 export interface PollutantConcentration {
   pm25?: number; // µg/m³
   pm10?: number; // µg/m³
   no2?: number; // µg/m³
   so2?: number; // µg/m³
-  co?: number; // mg/m³ (NOT µg)
+  co?: number; // mg/m³ (NOT µg) — unless coIsSubIndex=true, then 0–500 NAQI sub-index
   o3?: number; // µg/m³
 }
 
@@ -92,8 +102,9 @@ function linearSubIndex(concentration: number, bp: Breakpoint[]): number {
   return Math.round(((bracket.iHigh - bracket.iLow) / (bracket.cHi - bracket.cLo)) * (concentration - bracket.cLo) + bracket.iLow);
 }
 
-export function toNAQI(c: PollutantConcentration): { naqi: number; subIndices: Record<string, number> } {
+export function toNAQI(c: PollutantConcentration, meta?: ConcentrationMetadata): { naqi: number; subIndices: Record<string, number> } {
   const subIndices: Record<string, number> = {};
+  const coPreSubIndexed = meta?.coIsSubIndex === true;
 
   const entries: Array<[string, number | undefined]> = [
     ["pm25", c.pm25],
@@ -106,6 +117,12 @@ export function toNAQI(c: PollutantConcentration): { naqi: number; subIndices: R
 
   for (const [key, raw] of entries) {
     if (raw == null || !Number.isFinite(raw) || raw < 0) continue;
+    // CPCB reports CO as a pre-broken-down 0–500 NAQI sub-index, not mg/m³.
+    // Skip breakpoint lookup and use the raw value directly as the sub-index.
+    if (key === "co" && coPreSubIndexed) {
+      subIndices[key] = Math.min(500, Math.max(0, Math.round(raw)));
+      continue;
+    }
     const bp = SUB_INDEX_BP[key];
     if (!bp) continue;
     subIndices[key] = linearSubIndex(raw, bp);

@@ -29,7 +29,10 @@ export interface MapViewProps {
   centerLat: number;
   centerLng: number;
   stations?: StationMarker[];
+  /** Fired when the user clicks/drops a pin on the map background */
   onClick?: (lat: number, lng: number) => void;
+  /** Fired when the user clicks the map background (not a station marker) */
+  onMapClick?: (lat: number, lng: number) => void;
   height?: string;
   className?: string;
 }
@@ -53,6 +56,7 @@ export const MapView: React.FC<MapViewProps> = ({
   centerLng,
   stations = [],
   onClick,
+  onMapClick,
   height = "480px",
   className = "",
 }) => {
@@ -76,11 +80,18 @@ export const MapView: React.FC<MapViewProps> = ({
         preferCanvas: false, // SVG backend avoids canvas detach issues
       });
       L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 18 }).addTo(mapRef.current);
+
+      // Fire onMapClick when the user clicks anywhere on the map background
+      // (not on a marker). Using 'mousedown' + 'mouseup' avoids the popup
+      // steal that 'click' sometimes does on the same element.
+      mapRef.current.on("click", (e: L.LeafletMouseEvent) => {
+        onMapClick?.(e.latlng.lat, e.latlng.lng);
+      });
     }
 
     // Only update view — never touch the DOM hierarchy ourselves.
     mapRef.current.setView([centerLat, centerLng], 13, { animate: false });
-  }, [centerLat, centerLng]);
+  }, [centerLat, centerLng, onMapClick]);
 
   // Cleanup on unmount (critical for React StrictMode double-mount)
   useEffect(() => {

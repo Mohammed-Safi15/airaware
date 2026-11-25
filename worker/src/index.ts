@@ -196,7 +196,7 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
     category: { label: "Unknown", color: "#808080" },
   };
   if (primary) {
-    const result = toNAQI(primary.concentrations);
+    const result = toNAQI(primary.concentrations, primary.concentrationMeta);
     meta = { naqi: result.naqi, subIndices: result.subIndices, category: category(result.naqi) };
   }
 
