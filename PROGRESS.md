@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
-**Current Phase**: Phase 2 (Air Quality API Integration, Caching & Graphify Setup)
-**Exact Next Step**: Verify live Worker endpoints (/api/health, /api/aqi?lat=&lng=). Then proceed to Phase 3.
+**Current Phase**: Phase 3 (Interactive Map, Geocoding & Multi-Location Management)
+**Exact Next Step**: Implement Leaflet map, debounced Photon/Nominatim search, /api/aqi station markers, and Supabase CRUD for saved_locations. Stop at the Phase 3 Exit Gate for verification.
 
 ---
 
@@ -51,12 +51,16 @@
 - [ ] Graphify setup — blocked by missing `anthropic` Python package; retry after install
 - [x] **Phase 2 Exit Gate**: Verify live AQI endpoint against deployed Worker ✅
 
-### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
-
-### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
-- [ ] Auth pages (Login, Signup, Onboarding flow) — [x] — Completed in Phase 0
-- [ ] Routing & layout components (Navbar, Bottom Nav, Protected Routes)
-- [ ] **Phase 3 Exit Gate**: Verify UI shell and auth routing
+### [x] Phase 3: Interactive Map, Geocoding & Multi-Location Management
+- [x] Install Leaflet + `@types/leaflet` (already present in devDependencies) ✅
+- [x] App shell with React Router — Dashboard, Locations, Settings pages with bottom nav ✅
+- [x] Debounced Photon/Nominatim geocoding search component (400ms default) ✅
+- [x] Interactive Leaflet map with OSM tiles and `/api/aqi` station markers (NAQI color-coded) ✅
+- [x] Supabase CRUD for `saved_locations` table (create, read, update, delete) ✅
+- [x] Location picker integrated with saved locations list ✅
+- [x] User geolocation ("Use My Location" button) ✅
+- [x] `tsc --noEmit` clean; `npx vite build` passes ✅
+- [ ] **Phase 3 Exit Gate**: Verify interactive map, search, and saved-location CRUD against live app
 
 ### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
 - [ ] Dashboard & Live AQI Monitoring widget with provenance badges
