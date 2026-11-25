@@ -49,7 +49,9 @@
 - [x] Stale-data detection (>2h since measurement_timestamp → Estimated) ✅
 - [x] `tsc --noEmit` clean; frontend build passes ✅
 - [ ] Graphify setup — blocked by missing `anthropic` Python package; retry after install
-- [ ] **Phase 2 Exit Gate**: Verify live AQI endpoint against deployed Worker
+- [x] **Phase 2 Exit Gate**: Verify live AQI endpoint against deployed Worker ✅
+
+### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
 
 ### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
 - [ ] Auth pages (Login, Signup, Onboarding flow) — [x] — Completed in Phase 0

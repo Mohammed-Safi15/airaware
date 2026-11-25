@@ -1,5 +1,5 @@
 import type { Env } from "./bindings.js";
-import { fetchCPCBRecords, buildCPCBStation } from "./lib/fetchers/cpcb.js";
+import { fetchCPCBRecords, buildCPCBStation, groupByStation } from "./lib/fetchers/cpcb.js";
 import { fetchOpenAQLocations, buildOpenAQStation } from "./lib/fetchers/openaq.js";
 import { toNAQI, category } from "./lib/nqi.js";
 import type { AQResponse, StationObservation, Reliability } from "./types/aq.js";
@@ -129,18 +129,37 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
 
   if (env.CPCB_API_KEY) {
     const records = await fetchCPCBRecords(env.CPCB_API_KEY);
-    for (const rec of records) {
-      const obs = buildCPCBStation(rec, lat, lng);
-      if (obs) alternatives.push(obs);
+    console.log(`[aqi] cpcb fetched ${records.length} raw rows`);
+    // CPCB returns one row per pollutant; group-then-pivot into stations.
+    const buckets = groupByStation(records);
+    console.log(`[aqi] cpcb grouped into ${buckets.length} station-buckets`);
+    for (const bucket of buckets) {
+      const obs = buildCPCBStation(bucket, lat, lng);
+      if (obs) {
+        console.log(`[aqi]   station: ${obs.station_name} dist=${obs.distance_km}km polls=${Object.keys(obs.concentrations).join(',')}`);
+        alternatives.push(obs);
+      }
     }
+    if (alternatives.length === 0) console.log("[aqi]   → no CPCB stations passed validation");
+  } else {
+    console.log("[aqi] CPCB_API_KEY not set — skipping CPCB");
   }
 
+  console.log(`[aqi] alternatives so far: ${alternatives.length}`);
   if (alternatives.length === 0 && env.OPENAQ_API_KEY) {
+    console.log("[aqi] falling back to OpenAQ v3");
     const locations = await fetchOpenAQLocations(env.OPENAQ_API_KEY, lat, lng);
+    console.log(`[aqi] openaq returned ${locations.length} locations`);
     for (const loc of locations) {
-      const obs = buildOpenAQStation(loc, lat, lng);
-      if (obs) alternatives.push(obs);
+      const obs = buildOpenAQStation(loc);
+      if (obs) {
+        console.log(`[aqi]   station: ${obs.station_name} dist=${obs.distance_km}km polls=${Object.keys(obs.concentrations).join(',')}`);
+        alternatives.push(obs);
+      }
     }
+    if (locations.length > 0 && alternatives.length === 0) console.log("[aqi]   → all openaq locations had zero measurements");
+  } else if (env.OPENAQ_API_KEY) {
+    console.log("[aqi] skipping OpenAQ — already have CPCB stations");
   }
 
   // Sort by proximity, take the nearest as primary, classify reliability.

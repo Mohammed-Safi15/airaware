@@ -5,27 +5,24 @@ import { haversineMetres } from "../haversine.js";
 // ---------------------------------------------------------------------------
 // CPCB (Central Pollution Control Board) adapter — data.gov.in resource API
 // ---------------------------------------------------------------------------
-// data.gov.in exposes CPCB station readings as resource records, e.g.:
-//   https://api.data.gov.in/resource/<resource-id>?api-key=<key>&format=json&limit=N
-// Each record is one station observation with pollutant columns rather than
-// one row per parameter. We read both camelCase and lower-case column names
-// defensively because the resource schema has changed across revisions.
+// data.gov.in exposes one ROW PER POLLUTANT per station per reading cycle.
+// Each record carries: station, last_update, latitude, longitude, pollutant_id,
+// avg_value (string, possibly "NA"). We must group-then-pivot by station before
+// building StationObservations.
 // ---------------------------------------------------------------------------
 
-/** One record from the CPCB resource feed. Fields are case-insensitive-ish. */
 export interface CPCBRecord {
   station?: string;
-  station_name?: string;
   city?: string;
-  latitude?: number | string;
-  longitude?: number | string;
-  last_update?: string;
-  pm2_5?: number | string;
-  pm10?: number | string;
-  no2?: number | string;
-  so2?: number | string;
-  co?: number | string;
-  ozone?: number | string;
+  state?: string;
+  country?: string;
+  latitude?: string | number;
+  longitude?: string | number;
+  last_update?: string; // DD-MM-YYYY HH:MM:SS
+  pollutant_id?: string; // PM2.5, PM10, NO2, SO2, CO, O3 …
+  min_value?: string;
+  max_value?: string;
+  avg_value?: string; // "NA" means no reading today
   [key: string]: unknown;
 }
 
@@ -33,24 +30,63 @@ interface CPCBEnvelope {
   records?: CPCBRecord[];
 }
 
-/** Default data.gov.in resource id for live CPCB station data. */
 const CPCB_RESOURCE_ID = "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
 
+const POLLUTANT_COLUMNS: Array<[string, string]> = [
+  ["pm25", "PM2.5"],
+  ["pm10", "PM10"],
+  ["no2", "NO2"],
+  ["so2", "SO2"],
+  ["co", "CO"],
+  ["o3", "O3"],
+];
+
+/** Parse a floating-point value from a string; returns undefined on "NA"/blank/NaN. */
+function parseVal(s?: string): number | undefined {
+  if (!s || s.trim() === "" || s.toUpperCase() === "NA") return undefined;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Parse CPCB's DD-MM-YYYY HH:MM:SS timestamp format.
+ * JS Date.parse() does not recognise this format natively.
+ * Returns milliseconds-since-unix-epoch or NaN. */
+function parseCPCBTimestamp(s?: string): number {
+  if (!s || typeof s !== "string") return NaN;
+  const trimmed = s.trim();
+  if (trimmed.toUpperCase() === "NA") return NaN;
+  // Expected format: DD-MM-YYYY HH:MM:SS
+  const m = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/);
+  if (!m) return NaN;
+  const [, dd, MM, yyyy, HH, mm, ss] = m;
+  // JS months are 0-indexed
+  const date = new Date(+yyyy, Number(MM) - 1, +dd, +HH, +mm, +ss);
+  // Verify roundtrip: year must not be 1970 (malformed dates give 1970)
+  if (date.getFullYear() < 1970) return NaN;
+  return date.getTime();
+}
+
 /**
- * Fetch CPCB station records near a coordinate.
- *
- * The data.gov.in resource API has no geo filter, so we pull a bounded page
- * and let the caller's Haversine step select the nearest stations. Returns
- * `[]` on any failure.
+ * Group raw CPCB rows (one per pollutant) into per-station objects so we can
+ * emit one StationObservation per station. Uses station+city as the dedup key
+ * because two records for the same station sharing last_update represent one
+ * reading cycle.
  */
-export async function fetchCPCBRecords(
-  apiKey: string,
-  limit = 200,
-): Promise<CPCBRecord[]> {
+export function groupByStation(records: CPCBRecord[]): CPCBRecord[][] {
+  const groups = new Map<string, CPCBRecord[]>();
+  for (const rec of records) {
+    const key = `${String(rec.station ?? "")}|${String(rec.city ?? "")}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(rec);
+  }
+  return [...groups.values()].filter((g) => g.length > 0);
+}
+
+export async function fetchCPCBRecords(apiKey: string): Promise<CPCBRecord[]> {
   const url = new URL(`https://api.data.gov.in/resource/${CPCB_RESOURCE_ID}`);
   url.searchParams.set("api-key", apiKey);
   url.searchParams.set("format", "json");
-  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("limit", "2000");
 
   try {
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
@@ -66,60 +102,41 @@ export async function fetchCPCBRecords(
   }
 }
 
-function pickNumber(rec: CPCBRecord, ...keys: string[]): number | undefined {
-  for (const key of keys) {
-    const raw = rec[key];
-    if (raw === null || raw === undefined || raw === "") continue;
-    const n = typeof raw === "number" ? raw : parseFloat(String(raw));
-    if (Number.isFinite(n)) return n;
-  }
-  return undefined;
-}
-
-function toConcentrations(rec: CPCBRecord): PollutantConcentration {
-  const out: PollutantConcentration = {};
-  const pm25 = pickNumber(rec, "pm2_5", "pm25", "PM2.5", "PM2_5");
-  const pm10 = pickNumber(rec, "pm10", "PM10");
-  const no2 = pickNumber(rec, "no2", "NO2");
-  const so2 = pickNumber(rec, "so2", "SO2");
-  const co = pickNumber(rec, "co", "CO");
-  const o3 = pickNumber(rec, "ozone", "o3", "OZONE", "O3");
-  if (pm25 !== undefined) out.pm25 = pm25;
-  if (pm10 !== undefined) out.pm10 = pm10;
-  if (no2 !== undefined) out.no2 = no2;
-  if (so2 !== undefined) out.so2 = so2;
-  if (co !== undefined) out.co = co;
-  if (o3 !== undefined) out.o3 = o3;
-  return out;
-}
-
 /**
- * Build a StationObservation from one CPCB record. Returns null when the
- * record has no coordinates, no pollutant data, or no timestamp.
+ * Build a single StationObservation from a bucket of CPCB rows that share a
+ * station. Never substitutes zero for a missing pollutant (PRD guardrail).
  */
-export function buildCPCBStation(
-  rec: CPCBRecord,
-  qLat: number,
-  qLng: number,
-): StationObservation | null {
-  const lat = pickNumber(rec, "latitude", "Latitude", "lat");
-  const lng = pickNumber(rec, "longitude", "Longitude", "lng", "lon");
-  if (lat === undefined || lng === undefined) return null;
+export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: number): StationObservation | null {
+  if (bucket.length === 0) return null;
+  const head = bucket[0];
 
-  const concentrations = toConcentrations(rec);
-  if (Object.keys(concentrations).length === 0) return null;
+  const latStr = String(head.latitude ?? "").trim();
+  const lngStr = String(head.longitude ?? "").trim();
+  const lat = parseFloat(latStr);
+  const lng = parseFloat(lngStr);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-  const rawTs = rec.last_update ?? rec.lastUpdate ?? rec.last_updated;
-  const parsedTs = rawTs ? Date.parse(String(rawTs)) : NaN;
+  // Resolve pollutant concentrations from whichever buckets contain them.
+  const concentrations: PollutantConcentration = {};
+  for (const [key, pid] of POLLUTANT_COLUMNS) {
+    const match = bucket.find((r) => r.pollutant_id?.toUpperCase() === pid.toUpperCase());
+    const val = match ? parseVal(match.avg_value) : undefined;
+    if (val !== undefined) concentrations[key as keyof PollutantConcentration] = val;
+  }
+  if (Object.keys(concentrations).length === 0) return null; // nothing to report
+
+  // Parse DD-MM-YYYY HH:MM:SS (Indian national standard format used by CPCB).
+  // JS Date.parse does NOT recognise this format — manual parse is required.
+  const parsedTs = parseCPCBTimestamp(head.last_update);
   if (!Number.isFinite(parsedTs)) return null; // never fabricate a timestamp
 
-  const name = String(rec.station ?? rec.station_name ?? "Unknown CPCB station");
+  const name = String(head.station ?? "Unknown CPCB station");
   const distM = haversineMetres(qLat, qLng, lat, lng);
   return {
     station_id: `cpcb:${name}`,
     station_name: name,
     source: "cpcb",
-    attribution: ["CPCB", rec.city].filter(Boolean).join(" · "),
+    attribution: [head.city, head.state].filter(Boolean).join(", ") || "CPCB",
     concentrations,
     measurement_timestamp: new Date(parsedTs).toISOString(),
     reliability: "Measured",
