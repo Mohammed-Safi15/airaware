@@ -1,0 +1,9 @@
+name = "airaware-worker"
+main = "src/index.ts"
+compatibility_date = "2025-06-20"
+
+[ai]
+binding = "AI"
+
+[vars]
+ENVIRONMENT = "development"
