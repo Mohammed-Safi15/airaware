@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
-**Current Phase**: Phase 1 (Authentication & Secure Database Foundation)  
-**Exact Next Step**: Supabase tables & RLS verification via SQL. Then test Phase 1 Exit Gate with two test user accounts.
+**Current Phase**: Phase 2 (Air Quality API Integration, Caching & Graphify Setup)
+**Exact Next Step**: Verify live Worker endpoints (/api/health, /api/aqi?lat=&lng=). Then proceed to Phase 3.
 
 ---
 
@@ -98,3 +98,27 @@ To pass Phase 1, please:
 2. Create two test user accounts (Email/Password) and verify they can each log in/log out.
 3. Confirm User A cannot read User B's rows in any of the 6 tables (test RLS by querying as different auth users).
 4. Update `PROGRESS.md` before finishing this response so a new session can resume immediately.
+
+---
+
+## Phase 2 Exit Gate — Verification Checklist
+The following have been implemented and committed (86cbec5):
+
+1. **Endpoints**: `/api/health` and `/api/aqi?lat=&lng=` with CORS headers.
+2. **Adapters**: CPCB (data.gov.in) + OpenAQ fallback with graceful error handling.
+3. **NAQI calculator**: Indian National AQI per CPCB breakpoints — no averaging across stations, no zero-substitution.
+4. **Reliability model**: Measured / Estimated / Unavailable with >2h staleness detection.
+5. **Caching**: Cloudflare edge cache with 30 min TTL via `caches.default`.
+6. **Type safety**: `tsc --noEmit` clean; frontend build passes.
+7. **Graphify**: Pending (blocked by missing `anthropic` Python package — install via `pip install anthropic` or `uv tool install "graphifyy[anthropic]"`).
+
+To verify:
+```bash
+# Local dev
+npx wrangler dev   # http://localhost:8787/api/health
+
+# Test AQI endpoint
+curl "http://localhost:8787/api/aqi?lat=12.9716&lng=77.5946"
+```
+
+After passing Phase 2, update PROGRESS.md and proceed to Phase 3.
