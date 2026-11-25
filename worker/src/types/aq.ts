@@ -53,5 +53,8 @@ export interface AQResponse {
     category: { label: string; color: string };
     /** City/state of the query point (prefilled when primary provides them). */
     locality?: string;
+    /** US EPA AQI computed alongside Indian NAQI. */
+    usAqi?: number;
+    usAqiCategory?: { label: string; color: string };
   };
 }

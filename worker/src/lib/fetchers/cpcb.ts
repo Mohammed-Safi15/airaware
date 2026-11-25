@@ -32,6 +32,77 @@ interface CPCBEnvelope {
 
 const CPCB_RESOURCE_ID = "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
 
+/**
+ * Built-in coordinate fallback for major Indian CPCB/SPCB stations that are
+ * missing lat/lng in the data.gov.in feed (e.g. Kasturi Nagar, various Delhi
+ * stations). Keys are lowercased station names; values are {lat, lng} tuples.
+ */
+const STATION_COORDINATE_DICT: Record<string, { lat: number; lng: number }> = {
+  // ── Bengaluru ──────────────────────────────────────────────────────────────
+  "bapuji nagar":            { lat: 13.0157, lng: 77.5667 },
+  "jayanagar 5th block":     { lat: 12.9255, lng: 77.5803 },
+  "hombegowda nagar":        { lat: 12.9780, lng: 77.5900 },
+  "silk board":              { lat: 12.9167, lng: 77.6133 },
+  "btm layout":              { lat: 12.9105, lng: 77.6100 },
+  "hebbal":                  { lat: 13.0358, lng: 77.5978 },
+  "peenya":                  { lat: 13.0244, lng: 77.4936 },
+  "kasturi nagar":           { lat: 12.9492, lng: 77.5988 },
+  "bwssb kadabesanahalli":   { lat: 12.9930, lng: 77.6500 },
+  "rvce-mailasandra":        { lat: 12.9022, lng: 77.6631 },
+  "malleshwaram":            { lat: 13.0030, lng: 77.5750 },
+  "ranipur":                 { lat: 12.9680, lng: 77.5850 },
+  "basavanagudi":            { lat: 12.9410, lng: 77.5740 },
+  // ── Delhi ──────────────────────────────────────────────────────────────────
+  "rohini":                  { lat: 28.7320, lng: 77.1200 },
+  "dtu":                     { lat: 28.7500, lng: 77.1200 },
+  "punjabi bagh":            { lat: 28.6500, lng: 77.1300 },
+  "rk puram":                { lat: 28.5650, lng: 77.1900 },
+  "dwarka":                  { lat: 28.5900, lng: 77.0400 },
+  "jahangirpuri":            { lat: 28.7250, lng: 77.1600 },
+  "madhya marg":             { lat: 28.5900, lng: 77.1950 },
+  "rani khera":              { lat: 28.6600, lng: 77.0700 },
+  "shahdara":                { lat: 28.6680, lng: 77.2980 },
+  "ankleshwar":              { lat: 28.6900, lng: 77.1000 },
+  // ── Mumbai ─────────────────────────────────────────────────────────────────
+  "andheri":                 { lat: 19.1136, lng: 72.8697 },
+  "bandra":                  { lat: 19.0596, lng: 72.8464 },
+  "bmc":                     { lat: 18.9388, lng: 72.8354 },
+  "charkop":                 { lat: 19.1600, lng: 72.8100 },
+  "kolhapur":                { lat: 16.7050, lng: 74.2433 },
+  "mantor":                  { lat: 19.0000, lng: 72.8300 },
+  "nagpada":                 { lat: 18.9500, lng: 72.8400 },
+  "ranson":                  { lat: 19.0100, lng: 72.8500 },
+  "worli":                   { lat: 19.0176, lng: 72.8150 },
+  // ── Chennai ────────────────────────────────────────────────────────────────
+  "ambattur":                { lat: 13.1143, lng: 80.2340 },
+  "avadi":                   { lat: 13.1144, lng: 80.0997 },
+  "chennai central":         { lat: 13.0827, lng: 80.2707 },
+  "kodambakkam":             { lat: 13.0480, lng: 80.2200 },
+  "madhavaram":              { lat: 13.1200, lng: 80.2650 },
+  "medavakkam":              { lat: 12.9370, lng: 80.2440 },
+  "mylapore":                { lat: 13.0340, lng: 80.2640 },
+  // ── Hyderabad ──────────────────────────────────────────────────────────────
+  "aphson high school":      { lat: 17.3850, lng: 78.4867 },
+  "bolarum":                 { lat: 17.5300, lng: 78.4200 },
+  "chaudry hospital":        { lat: 17.3700, lng: 78.4900 },
+  "dilsukhnagar":            { lat: 17.3712, lng: 78.4082 },
+  "gb road":                 { lat: 17.3753, lng: 78.4744 },
+  "jamai osmania":           { lat: 17.3700, lng: 78.4750 },
+  "kuskumpet":               { lat: 17.3800, lng: 78.4800 },
+  "lc colon":                { lat: 17.3750, lng: 78.4700 },
+  "mehdipatnam":             { lat: 17.3600, lng: 78.4400 },
+  "musheerabad":             { lat: 17.3900, lng: 78.4700 },
+  "secunderabad":            { lat: 17.4350, lng: 78.5000 },
+  "vanasthalipuram":         { lat: 17.3200, lng: 78.5300 },
+  // ── Kolkata ────────────────────────────────────────────────────────────────
+  "bakshi bazar":            { lat: 22.5670, lng: 88.3700 },
+  "bhawanipur":              { lat: 22.5350, lng: 88.3550 },
+  "fort william":            { lat: 22.5580, lng: 88.3400 },
+  "jadavpur":                { lat: 22.4980, lng: 88.3680 },
+  "park street":             { lat: 22.5450, lng: 88.3550 },
+  "raja scandia":            { lat: 22.5600, lng: 88.3600 },
+};
+
 const POLLUTANT_COLUMNS: Array<[string, string]> = [
   ["pm25", "PM2.5"],
   ["pm10", "PM10"],
@@ -135,9 +206,20 @@ export function buildCPCBStation(bucket: CPCBRecord[], qLat: number, qLng: numbe
 
   const latStr = String(head.latitude ?? "").trim();
   const lngStr = String(head.longitude ?? "").trim();
-  const lat = parseFloat(latStr);
-  const lng = parseFloat(lngStr);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  let lat = parseFloat(latStr);
+  let lng = parseFloat(lngStr);
+
+  // Fall back to built-in coordinate dictionary when raw lat/lng are absent.
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    const lookupName = String(head.station ?? "").toLowerCase().trim();
+    const fallback = STATION_COORDINATE_DICT[lookupName];
+    if (fallback) {
+      lat = fallback.lat;
+      lng = fallback.lng;
+    } else {
+      return null;
+    }
+  }
 
   // Resolve pollutant concentrations from whichever buckets contain them.
   const concentrations: PollutantConcentration = {};

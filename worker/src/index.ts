@@ -2,7 +2,7 @@ import type { Env } from "./bindings.js";
 import { fetchCPCBRecords, buildCPCBStation, groupByStation } from "./lib/fetchers/cpcb.js";
 import { fetchOpenAQLocations, buildOpenAQStation } from "./lib/fetchers/openaq.js";
 import { fetchOpenMeteo, buildOpenMeteoStation } from "./lib/fetchers/open-meteo.js";
-import { toNAQI, category } from "./lib/nqi.js";
+import { toNAQI, category, toUSAQI, usaCategory } from "./lib/nqi.js";
 import type { AQResponse, StationObservation, Reliability } from "./types/aq.js";
 
 // ---------------------------------------------------------------------------
@@ -190,14 +190,21 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
 
   // NAQI summary from the primary station's own concentrations (never an
   // average across stations — PRD guardrail).
-  let meta = {
+  let meta: AQResponse["_meta"] = {
     naqi: -1,
     subIndices: {} as Record<string, number>,
     category: { label: "Unknown", color: "#808080" },
   };
   if (primary) {
     const result = toNAQI(primary.concentrations, primary.concentrationMeta);
-    meta = { naqi: result.naqi, subIndices: result.subIndices, category: category(result.naqi) };
+    const usResult = toUSAQI(primary.concentrations, primary.concentrationMeta);
+    meta = {
+      naqi: result.naqi,
+      subIndices: result.subIndices,
+      category: category(result.naqi),
+      usAqi: usResult.usAqi,
+      usAqiCategory: usaCategory(usResult.usAqi),
+    };
   }
 
   const response: AQResponse = {
