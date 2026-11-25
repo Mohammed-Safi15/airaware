@@ -60,9 +60,9 @@ export default function App() {
         <Route
           element={<ProtectedRoute user={user}><AppShell user={user} setUser={setUser} /></ProtectedRoute>}
         >
-          <Route path="/dashboard" element={<Dashboard userId={user!.id} />} />
-          <Route path="/locations" element={<LocationsPage userId={user!.id} onLocationSelect={() => {}} />} />
-          <Route path="/settings" element={<SettingsPage userId={user!.id} userEmail={user?.email} />} />
+          <Route path="/dashboard" element={<Dashboard userId={user?.id ?? ''} />} />
+          <Route path="/locations" element={<LocationsPage userId={user?.id ?? ''} onLocationSelect={() => {}} />} />
+          <Route path="/settings" element={<SettingsPage userId={user?.id ?? ''} userEmail={user?.email} />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
 
