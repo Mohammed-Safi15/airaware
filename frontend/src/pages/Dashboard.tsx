@@ -4,14 +4,12 @@ import { SearchBar } from "../components/SearchBar";
 import { AlertCircle, Wind } from "lucide-react";
 import type { AQResponse, StationObservation } from "../types/aq";
 
-interface DashboardProps {
-  userId: string;
-}
+interface DashboardProps {}
 
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946;
 
-export function Dashboard({ userId: _userId }: DashboardProps) {
+export function Dashboard({ }: DashboardProps) {
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
   const [locationName, setLocationName] = useState("Bengaluru");

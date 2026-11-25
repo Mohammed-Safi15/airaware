@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "./lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { AppShell } from "./components/AppShell";
@@ -8,10 +8,16 @@ import { Dashboard } from "./pages/Dashboard";
 import { LocationsPage } from "./pages/Locations";
 import { SettingsPage } from "./pages/Settings";
 
-function ProtectedRoute({ user, children }: { user: User | null; children: React.ReactNode }) {
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+/** Live auth context — all child components read the current user from here */
+const AuthCtx = createContext<{ user: User | null; setUser: (u: User | null) => void }>({
+  user: null,
+  setUser: () => {},
+});
+export function useAuth() { return useContext(AuthCtx); }
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -20,13 +26,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     void supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -49,26 +53,28 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route
-          path="/login"
-          element={user ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={setUser} />}
-        />
+      <AuthCtx.Provider value={{ user, setUser }}>
+        <Routes>
+          {/* Public */}
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={setUser} />}
+          />
 
-        {/* Protected routes */}
-        <Route
-          element={<ProtectedRoute user={user}><AppShell user={user} setUser={setUser} /></ProtectedRoute>}
-        >
-          <Route path="/dashboard" element={<Dashboard userId={user?.id ?? ''} />} />
-          <Route path="/locations" element={<LocationsPage userId={user?.id ?? ''} onLocationSelect={() => {}} />} />
-          <Route path="/settings" element={<SettingsPage userId={user?.id ?? ''} userEmail={user?.email} />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Route>
+          {/* Protected */}
+          <Route
+            element={<ProtectedRoute><AppShell user={user} setUser={setUser} /></ProtectedRoute>}
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/locations" element={<LocationsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Route>
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AuthCtx.Provider>
     </BrowserRouter>
   );
 }

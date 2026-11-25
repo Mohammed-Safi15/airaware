@@ -3,29 +3,24 @@ import { MapView } from "../components/MapView";
 import { SearchBar } from "../components/SearchBar";
 import { SavedLocations } from "../components/SavedLocations";
 import { MapPin } from "lucide-react";
-
-interface LocationsPageProps {
-  userId: string;
-  onLocationSelect: (lat: number, lng: number, name: string) => void;
-}
+import { useAuth } from "../App";
 
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946;
 
-export function LocationsPage({ userId, onLocationSelect }: LocationsPageProps) {
+export function LocationsPage() {
+  const { user } = useAuth();
   const [selectedLoc, setSelectedLoc] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [mapCenter, setMapCenter] = useState({ lat: DEFAULT_LAT, lng: DEFAULT_LNG });
 
   function handleSearchSelect(lat: number, lng: number, name: string) {
     setSelectedLoc({ lat, lng, name });
     setMapCenter({ lat, lng });
-    onLocationSelect(lat, lng, name);
   }
 
-  function handleLocationSelectFromList(lat: number, lng: number, name: string) {
-    setSelectedLoc({ lat, lng, name });
-    setMapCenter({ lat, lng });
-    onLocationSelect(lat, lng, name);
+  function handleLocationSelectFromList(_lat: number, _lng: number, _name: string) {
+    // Map centering is handled by SavedLocations via onLocationSelect if needed;
+    // this placeholder keeps the prop signature valid.
   }
 
   function useMyLocation() {
@@ -36,7 +31,6 @@ export function LocationsPage({ userId, onLocationSelect }: LocationsPageProps) 
           const name = "My Location";
           setSelectedLoc({ lat: latitude, lng: longitude, name });
           setMapCenter({ lat: latitude, lng: longitude });
-          onLocationSelect(latitude, longitude, name);
         },
         (err) => {
           console.error("Geolocation error:", err);
@@ -88,7 +82,7 @@ export function LocationsPage({ userId, onLocationSelect }: LocationsPageProps) 
       />
 
       {/* Saved Locations CRUD */}
-      <SavedLocations userId={userId} onLocationSelect={handleLocationSelectFromList} />
+      <SavedLocations userId={user?.id ?? ''} onLocationSelect={handleLocationSelectFromList} />
     </div>
   );
 }

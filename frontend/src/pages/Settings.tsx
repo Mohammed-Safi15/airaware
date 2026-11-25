@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import type { Lifestyle, ProfileRow } from "../lib/supabase";
 import { User, Save, Loader2 } from "lucide-react";
+import { useAuth } from "../App";
 
-interface SettingsPageProps {
-  userId: string;
-  userEmail?: string;
-}
+interface SettingsPageProps {}
 
-export function SettingsPage({ userId, userEmail }: SettingsPageProps) {
+export function SettingsPage({ }: SettingsPageProps) {
+  const { user } = useAuth();
+  if (!user) return null;
+  const u = user;
   const [_profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -18,14 +19,14 @@ export function SettingsPage({ userId, userEmail }: SettingsPageProps) {
 
   useEffect(() => {
     loadProfile();
-  }, [userId]);
+  }, [u]);
 
   async function loadProfile() {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("id", u.id)
         .single();
 
       if (error) throw error;
@@ -51,7 +52,7 @@ export function SettingsPage({ userId, userEmail }: SettingsPageProps) {
       const { error } = await supabase
         .from("profiles")
         .upsert({
-          id: userId,
+          id: u.id,
           display_name: displayName.trim(),
           lifestyle,
         });
@@ -92,7 +93,7 @@ export function SettingsPage({ userId, userEmail }: SettingsPageProps) {
           </div>
           <div>
             <h2 className="font-semibold text-slate-900">Profile</h2>
-            {userEmail && <p className="text-xs text-slate-500">{userEmail}</p>}
+            {user.email && <p className="text-xs text-slate-500">{user.email}</p>}
           </div>
         </div>
 
@@ -150,12 +151,12 @@ export function SettingsPage({ userId, userEmail }: SettingsPageProps) {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">User ID</span>
-            <span className="font-mono text-slate-700">{userId.slice(0, 8)}…</span>
+            <span className="font-mono text-slate-700">{user.id.slice(0, 8)}…</span>
           </div>
-          {userEmail && (
+          {user.email && (
             <div className="flex justify-between">
               <span className="text-slate-500">Email</span>
-              <span className="text-slate-700">{userEmail}</span>
+              <span className="text-slate-700">{user.email}</span>
             </div>
           )}
           <div className="flex justify-between">
