@@ -70,6 +70,19 @@
 - [x] NAQI badge color-coding on SavedLocations cards mirroring nqi.ts categories (Good ≤50 … Severe >400) ✅
 - [x] Auto-fetch AQI on saved-location load and explicit click ✅
 - [x] Final `tsc --noEmit` clean on both worker and frontend; `npm run build` passes ✅
+- [x] Saved Locations: duplicate location name input removed — only one text box + one type dropdown remain ✅
+- [x] Saved Locations: embedded Leaflet pinpoint picker map in Add/Edit form — click to drop/move pin with India-only reverse geocode via Photon ✅
+- [x] Saved Locations: "Use My Location" GPS button with `navigator.geolocation` ✅
+- [x] Saved Locations: Save button disabled until a valid pin is placed/selected/detected ✅
+- [x] Saved Locations: live NAQI/AQI preview badge shown before saving based on current lat/lng ✅
+- [x] Saved Locations: expandable ▼ Chevron accordion drawer per card showing full AQI details panel on demand ✅
+- [x] Saved Locations: Quick filter/search bar above saved list to filter by name or type ✅
+- [x] Saved Locations: source badge ("CPCB Station" / "Open-Meteo Model") rendered per-card and inside drawer ✅
+- [x] Saved Locations: pollutant grid (PM2.5, PM10, NO2, CO, SO2, O3) inside drawer ✅
+- [x] Saved Locations: Action buttons (Refresh AQI / View on Map) inside drawer ✅
+- [x] Built-in CPCB station coordinate dictionary for 30+ major Indian stations across Bengaluru/Delhi/Mumbai/Chennai/Hyderabad/Kolkata (worker/src/lib/fetchers/cpcb.ts STATION_COORDINATE_DICT) ✅
+- [x] Dual NAQI + US EPA AQI returned from /api/aqi and displayed everywhere (Dashboard card + Saved Locations cards/drawers) ✅
+- [x] All changes committed locally; awaiting browser verification and local `wip: phase 3 pinpoint picker and saved location aqi drawer` commit.
 
 ### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
 - [ ] Dashboard & Live AQI Monitoring widget with provenance badges

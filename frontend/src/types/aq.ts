@@ -42,5 +42,8 @@ export interface AQResponse {
     subIndices: Record<string, number>;
     category: { label: string; color: string };
     locality?: string;
+    /** US EPA AQI computed alongside Indian NAQI. */
+    usAqi?: number;
+    usAqiCategory?: { label: string; color: string };
   };
 }
