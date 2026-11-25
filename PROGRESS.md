@@ -40,12 +40,16 @@
 - [x] Frontend env files (`frontend/.env`, `frontend/.env.example`) ✅
 - [x] **Phase 1 Exit Gate**: Verify Supabase tables with RLS and test user auth flow ✅ — User A vs User B RLS isolation panel wired, Vite build passes (`npm run build`), tsc --noEmit clean, dev server serves UI; two-account test harness (AuthPanel + RlsTestPanel) committed and push to origin/master
 
-### [ ] Phase 2: Air Quality API Integration, Caching & Graphify Setup
-- [ ] CPCB (`data.gov.in`) & OpenAQ API adapter implementation in Worker
-- [ ] Cloudflare Workers Cache API implementation (`caches.default`)
-- [ ] Station matching logic (nearest station calculation using Haversine formula)
-- [ ] Enable Graphify (`graphifyy`) for codebase mapping (`graphify-out/`)
-- [ ] **Phase 2 Exit Gate**: Verify live AQI data retrieval and caching
+### [x] Phase 2: Air Quality API Integration, Caching & Graphify Setup
+- [x] CPCB (`data.gov.in`) & OpenAQ API adapter implementation in Worker ✅
+- [x] Cloudflare Workers Cache API implementation (`caches.default`) ✅
+- [x] Station matching logic (nearest station calculation using Haversine formula) ✅
+- [x] Indian National AQI calculator per CPCB breakpoints (never averages across stations; never substitutes zero) ✅
+- [x] Three-state reliability model (Measured / Estimated / Unavailable) ✅
+- [x] Stale-data detection (>2h since measurement_timestamp → Estimated) ✅
+- [x] `tsc --noEmit` clean; frontend build passes ✅
+- [ ] Graphify setup — blocked by missing `anthropic` Python package; retry after install
+- [ ] **Phase 2 Exit Gate**: Verify live AQI endpoint against deployed Worker
 
 ### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
 - [ ] Auth pages (Login, Signup, Onboarding flow) — [x] — Completed in Phase 0
