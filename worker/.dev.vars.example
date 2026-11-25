@@ -1,0 +1,5 @@
+# Cloudflare Worker Secrets Template (save as .dev.vars for local dev)
+SUPABASE_URL=https://your-supabase-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+OPENAQ_API_KEY=your-openaq-api-key
+CPCB_API_KEY=your-cpcb-data.gov.in-api-key

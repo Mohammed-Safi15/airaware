@@ -1,0 +1,24 @@
+# Node & dependencies
+node_modules/
+dist/
+build/
+.output/
+
+# Wrangler local state & caches
+.wrangler/
+.cache/
+
+# Environment files & secrets
+.env
+.env.local
+.env.*.local
+.dev.vars
+*.pem
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Graphify output cache (optional to gitignore or keep, keeping code structure is fine, gitignore output)
+graphify-out/
