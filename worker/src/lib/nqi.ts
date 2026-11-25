@@ -1,0 +1,127 @@
+/**
+ * Indian National Ambient Air Quality Index (NAQI) calculator.
+ *
+ * Implements the CPCB "National AQI" sub-index methodology:
+ *   1. Convert raw concentration -> sub-index for each pollutant (PM2.5, PM10, NO2, SO2, CO, O3).
+ *   2. NAQI = max(sub-indices).
+ *
+ * Breakpoints sourced from CPCB (India) – the authoritative domestic standard.
+ * Concentration units assumed: µg/m³ for particles/gases (except CO which is mg/m³).
+ *
+ * Design rule (from PRD): never substitute a missing pollutant with zero —
+ * simply omit its sub-index contribution so it cannot drag the average down.
+ */
+
+export interface PollutantConcentration {
+  pm25?: number; // µg/m³
+  pm10?: number; // µg/m³
+  no2?: number; // µg/m³
+  so2?: number; // µg/m³
+  co?: number; // mg/m³ (NOT µg)
+  o3?: number; // µg/m³
+}
+
+interface Breakpoint {
+  cLo: number;
+  cHi: number;
+  iLow: number;
+  iHigh: number;
+}
+
+const SUB_INDEX_BP: Record<string, Breakpoint[]> = {
+  // PM2.5 — µg/m³
+  pm25: [
+    { cLo: 0, cHi: 30, iLow: 0, iHigh: 50 },
+    { cLo: 30, cHi: 60, iLow: 51, iHigh: 100 },
+    { cLo: 60, cHi: 90, iLow: 101, iHigh: 200 },
+    { cLo: 90, cHi: 120, iLow: 201, iHigh: 300 },
+    { cLo: 120, cHi: 250, iLow: 301, iHigh: 400 },
+    { cLo: 250, cHi: 500, iLow: 401, iHigh: 500 },
+  ],
+  // PM10 — µg/m³
+  pm10: [
+    { cLo: 0, cHi: 50, iLow: 0, iHigh: 50 },
+    { cLo: 50, cHi: 100, iLow: 51, iHigh: 100 },
+    { cLo: 100, cHi: 250, iLow: 101, iHigh: 200 },
+    { cLo: 250, cHi: 350, iLow: 201, iHigh: 300 },
+    { cLo: 350, cHi: 430, iLow: 301, iHigh: 400 },
+    { cLo: 430, cHi: 600, iLow: 401, iHigh: 500 },
+  ],
+  // NO2 — µg/m³
+  no2: [
+    { cLo: 0, cHi: 40, iLow: 0, iHigh: 50 },
+    { cLo: 40, cHi: 80, iLow: 51, iHigh: 100 },
+    { cLo: 80, cHi: 180, iLow: 101, iHigh: 200 },
+    { cLo: 180, cHi: 480, iLow: 201, iHigh: 300 },
+    { cLo: 480, cHi: 780, iLow: 301, iHigh: 400 },
+    { cLo: 780, cHi: 1100, iLow: 401, iHigh: 500 },
+  ],
+  // SO2 — µg/m³
+  so2: [
+    { cLo: 0, cHi: 40, iLow: 0, iHigh: 50 },
+    { cLo: 40, cHi: 80, iLow: 51, iHigh: 100 },
+    { cLo: 80, cHi: 380, iLow: 101, iHigh: 200 },
+    { cLo: 380, cHi: 800, iLow: 201, iHigh: 300 },
+    { cLo: 800, cHi: 1600, iLow: 301, iHigh: 400 },
+    { cLo: 1600, cHi: 2100, iLow: 401, iHigh: 500 },
+  ],
+  // CO — mg/m³
+  co: [
+    { cLo: 0, cHi: 1, iLow: 0, iHigh: 50 },
+    { cLo: 1, cHi: 2, iLow: 51, iHigh: 100 },
+    { cLo: 2, cHi: 4, iLow: 101, iHigh: 200 },
+    { cLo: 4, cHi: 8, iLow: 201, iHigh: 300 },
+    { cLo: 8, cHi: 17, iLow: 301, iHigh: 400 },
+    { cLo: 17, cHi: 34, iLow: 401, iHigh: 500 },
+  ],
+  // O3 — µg/m³
+  o3: [
+    { cLo: 0, cHi: 50, iLow: 0, iHigh: 50 },
+    { cLo: 50, cHi: 100, iLow: 51, iHigh: 100 },
+    { cLo: 100, cHi: 168, iLow: 101, iHigh: 200 },
+    { cLo: 168, cHi: 208, iLow: 201, iHigh: 300 },
+    { cLo: 208, cHi: 748, iLow: 301, iHigh: 400 },
+    { cLo: 748, cHi: 1248, iLow: 401, iHigh: 500 },
+  ],
+};
+
+function linearSubIndex(concentration: number, bp: Breakpoint[]): number {
+  if (concentration < bp[0].cLo) return 0;
+  const bracket = bp.find((b) => b.cLo <= concentration && concentration <= b.cHi);
+  if (!bracket) return bp[bp.length - 1].iHigh; // beyond range cap to top bucket
+  return Math.round(((bracket.iHigh - bracket.iLow) / (bracket.cHi - bracket.cLo)) * (concentration - bracket.cLo) + bracket.iLow);
+}
+
+export function toNAQI(c: PollutantConcentration): { naqi: number; subIndices: Record<string, number> } {
+  const subIndices: Record<string, number> = {};
+
+  const entries: Array<[string, number | undefined]> = [
+    ["pm25", c.pm25],
+    ["pm10", c.pm10],
+    ["no2", c.no2],
+    ["so2", c.so2],
+    ["co", c.co],
+    ["o3", c.o3],
+  ];
+
+  for (const [key, raw] of entries) {
+    if (raw == null || !Number.isFinite(raw) || raw < 0) continue;
+    const bp = SUB_INDEX_BP[key];
+    if (!bp) continue;
+    subIndices[key] = linearSubIndex(raw, bp);
+  }
+
+  const values = Object.values(subIndices);
+  const naqi = values.length === 0 ? -1 : Math.max(...values);
+  return { naqi, subIndices };
+}
+
+export function category(naqi: number): { label: string; color: string } {
+  if (naqi < 0) return { label: "Unknown", color: "#808080" };
+  if (naqi <= 50) return { label: "Good", color: "#00E400" };
+  if (naqi <= 100) return { label: "Satisfactory", color: "#FFFF00" };
+  if (naqi <= 200) return { label: "Moderate", color: "#FF9900" };
+  if (naqi <= 300) return { label: "Poor", color: "#FF0000" };
+  if (naqi <= 400) return { label: "Very Poor", color: "#99004C" };
+  return { label: "Severe", color: "#660099" };
+}
