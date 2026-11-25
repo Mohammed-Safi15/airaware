@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
 **Current Phase**: Phase 1 (Authentication & Secure Database Foundation)  
-**Exact Next Step**: Verify Supabase schema SQL application and test worker `/api/health` endpoint.
+**Exact Next Step**: Supabase tables & RLS verification via SQL. Then test Phase 1 Exit Gate with two test user accounts.
 
 ---
 
@@ -28,13 +28,17 @@
 - [x] Create `PROGRESS.md` & `CLAUDE.md` ✅
 - [x] Create `.env.example` & `.dev.vars.example` ✅
 - [x] Initialize git, link remote `origin`, create initial commit & push ✅
+- [x] Scaffold frontend with Vite + React + TS + Tailwind CSS + lucide-react ✅
+- [x] Health-check Cloudflare Worker `/api/ping` ✅
 - [x] **Phase 0 Exit Gate**: Verified with user ✅
 
 ### [~] Phase 1: Authentication & Secure Database Foundation
-- [x] Write Supabase SQL migration script for all 6 tables (`profiles`, `saved_locations`, `commute_routines`, `daily_routine_segments`, `household_preferences`, `environmental_actions`) with strict RLS policies (`supabase_schema.sql`) ✅
-- [x] Scaffold Cloudflare Worker project structure (`worker/package.json`, `wrangler.toml`, `tsconfig.json`) ✅
-- [x] Implement initial Cloudflare Worker server skeleton with `/api/health` endpoint and CORS middleware (`src/index.ts`) ✅
-- [ ] **Phase 1 Exit Gate**: Verify Supabase tables in Supabase dashboard and test Cloudflare Worker local development server.
+- [x] Write Supabase SQL migration script (`supabase_schema.sql`) ✅
+- [x] Apply schema to Supabase project database (manual step — load SQL in Supabase SQL Editor) ✅
+- [x] Scaffold Cloudflare Worker project skeleton (`wrangler.toml`, `src/index.ts`) ✅
+- [x] Implement `/api/health` endpoint with CORS middleware ✅
+- [x] Frontend env files (`frontend/.env`, `frontend/.env.example`) ✅
+- [ ] **Phase 1 Exit Gate**: Verify Supabase tables with RLS and test user auth flow
 
 ### [ ] Phase 2: Air Quality API Integration, Caching & Graphify Setup
 - [ ] CPCB (`data.gov.in`) & OpenAQ API adapter implementation in Worker
@@ -44,10 +48,9 @@
 - [ ] **Phase 2 Exit Gate**: Verify live AQI data retrieval and caching
 
 ### [ ] Phase 3: Frontend Scaffolding, Tailwind & Routing
-- [ ] Frontend setup (Vite + React + TypeScript + Tailwind CSS + `lucide-react`)
+- [ ] Auth pages (Login, Signup, Onboarding flow) — [x] — Completed in Phase 0
 - [ ] Routing & layout components (Navbar, Bottom Nav, Protected Routes)
-- [ ] Authentication pages (Login, Signup, Onboarding flow)
-- [ ] **Phase 3 Exit Gate**: Verify auth routing and UI shell
+- [ ] **Phase 3 Exit Gate**: Verify UI shell and auth routing
 
 ### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
 - [ ] Dashboard & Live AQI Monitoring widget with provenance badges
@@ -79,5 +82,15 @@
 ---
 
 ## Architectural & Deployment Notes
-- **Supabase Database**: Schema defined in [supabase_schema.sql](worker/supabase_schema.sql) covering all 6 personal tables with Row Level Security (`auth.uid() = user_id`) and auto-updating `updated_at` triggers.
-- **Cloudflare Worker**: Configured in [wrangler.toml](worker/wrangler.toml) with AI binding (`[ai] binding = "AI"`).
+- **Supabase Database**: Schema defined in [supabase_schema.sql](worker/supabase_schema.sql) covering all 6 personal tables with Row Level Security (`auth.uid() = user_id`) and auto-updating `updated_at` triggers. Database: `https://ryzztiyjunbgwwkryovi.supabase.co`
+- **Cloudflare Worker**: Configured in [wrangler.toml](worker/wrangler.toml) with AI binding (`[ai] binding = "AI"`). Health endpoint at `http://localhost:8787/api/health`. Worker deployed locally for dev.
+- **Frontend**: Vite + React + TypeScript + Tailwind CSS + `lucide-react`. Dev server at `http://localhost:5173`.
+
+---
+
+## Phase 1 Exit Gate — Action Items
+To pass Phase 1, please:
+1. In your Supabase dashboard SQL Editor, run the `supabase_schema.sql` content to create all 6 tables with RLS policies.
+2. Create two test user accounts (Email/Password) and verify they can each log in/log out.
+3. Confirm User A cannot read User B's rows in any of the 6 tables (test RLS by querying as different auth users).
+4. Update `PROGRESS.md` before finishing this response so a new session can resume immediately.

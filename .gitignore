@@ -3,6 +3,7 @@ node_modules/
 dist/
 build/
 .output/
+*.tsbuildinfo
 
 # Wrangler local state & caches
 .wrangler/
