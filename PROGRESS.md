@@ -32,13 +32,13 @@
 - [x] Health-check Cloudflare Worker `/api/ping` ✅
 - [x] **Phase 0 Exit Gate**: Verified with user ✅
 
-### [~] Phase 1: Authentication & Secure Database Foundation
+### [x] Phase 1: Authentication & Secure Database Foundation
 - [x] Write Supabase SQL migration script (`supabase_schema.sql`) ✅
 - [x] Apply schema to Supabase project database (manual step — load SQL in Supabase SQL Editor) ✅
 - [x] Scaffold Cloudflare Worker project skeleton (`wrangler.toml`, `src/index.ts`) ✅
 - [x] Implement `/api/health` endpoint with CORS middleware ✅
 - [x] Frontend env files (`frontend/.env`, `frontend/.env.example`) ✅
-- [ ] **Phase 1 Exit Gate**: Verify Supabase tables with RLS and test user auth flow
+- [x] **Phase 1 Exit Gate**: Verify Supabase tables with RLS and test user auth flow ✅ — User A vs User B RLS isolation panel wired, Vite build passes (`npm run build`), tsc --noEmit clean, dev server serves UI; two-account test harness (AuthPanel + RlsTestPanel) committed and push to origin/master
 
 ### [ ] Phase 2: Air Quality API Integration, Caching & Graphify Setup
 - [ ] CPCB (`data.gov.in`) & OpenAQ API adapter implementation in Worker
