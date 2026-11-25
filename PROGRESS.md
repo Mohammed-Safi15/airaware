@@ -60,7 +60,7 @@
 - [x] Location picker integrated with saved locations list ✅
 - [x] User geolocation ("Use My Location" button) ✅
 - [x] `tsc --noEmit` clean; `npx vite build` passes ✅
-- [ ] **Phase 3 Exit Gate**: Verify interactive map, search, and saved-location CRUD against live app
+- [x] **Phase 3 Exit Gate**: Verified — auth crash fixed via AuthCtx, Leaflet DOM hierarchy resolved in MapView.tsx (no more HierarchyRequestError), tsc clean, vite build passes; user has completed interactive verification of map + search + saved locations CRUD ✅
 
 ### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
 - [ ] Dashboard & Live AQI Monitoring widget with provenance badges
