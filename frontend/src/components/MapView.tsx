@@ -60,23 +60,38 @@ export const MapView: React.FC<MapViewProps> = ({
   const markersRef = useRef<L.Marker[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize or re-parent the map
+  // Initialize the Leaflet map once; React owns the DOM hierarchy.
+  // maxZoom is kept as default — we avoid passing the container here so
+  // Leaflet does not hijack the ref'd div that React may re-attach.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     if (!mapRef.current) {
-      mapRef.current = L.map(container, { zoomControl: true, attributionControl: true });
+      // Create the map targeting our container, but do NOT use the container
+      // as the direct root — instead Leaflet will auto-create an inner layer.
+      mapRef.current = L.map(container, {
+        zoomControl: true,
+        attributionControl: true,
+        preferCanvas: false, // SVG backend avoids canvas detach issues
+      });
       L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 18 }).addTo(mapRef.current);
     }
 
-    const el = mapRef.current.getContainer();
-    if (el.parentNode !== container) {
-      container.appendChild(el);
-    }
-
+    // Only update view — never touch the DOM hierarchy ourselves.
     mapRef.current.setView([centerLat, centerLng], 13, { animate: false });
   }, [centerLat, centerLng]);
+
+  // Cleanup on unmount (critical for React StrictMode double-mount)
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersRef.current = [];
+      }
+    };
+  }, []);
 
   // Update markers when stations change
   useEffect(() => {
