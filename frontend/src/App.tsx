@@ -3,10 +3,13 @@ import { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "./lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { AppShell } from "./components/AppShell";
-import { LoginPage } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { LocationsPage } from "./pages/Locations";
 import { SettingsPage } from "./pages/Settings";
+import { LifestyleProfiles } from "./pages/LifestyleProfiles";
+import { RoutinesPage } from "./pages/Routines";
+import { LoginPage } from "./pages/Login";
+import { ProfilesProvider } from "./lib/profileContext";
 
 /** Live auth context — all child components read the current user from here */
 const AuthCtx = createContext<{ user: User | null; setUser: (u: User | null) => void }>({
@@ -54,7 +57,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthCtx.Provider value={{ user, setUser }}>
-        <Routes>
+        <ProfilesProvider user={user}>
+          <Routes>
           {/* Public */}
           <Route
             path="/login"
@@ -68,17 +72,16 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/lifestyle" element={<Navigate to="/lifestyle" replace />} />
-            <Route path="/routines" element={<Navigate to="/routines" replace />} />
-            <Route path="/awareness" element={<Navigate to="/awareness" replace />} />
-            <Route path="/history" element={<Navigate to="/history" replace />} />
+            <Route path="/lifestyle" element={<LifestyleProfiles />} />
+            <Route path="/routines" element={<RoutinesPage />} />
             <Route path="/account" element={<Navigate to="/settings" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+          </Routes>
+        </ProfilesProvider>
       </AuthCtx.Provider>
     </BrowserRouter>
   );

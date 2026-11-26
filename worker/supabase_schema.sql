@@ -130,7 +130,39 @@ CREATE POLICY "Users can delete own household_preferences" ON public.household_p
     FOR DELETE USING (auth.uid() = user_id);
 
 
--- 6. ENVIRONMENTAL ACTIONS TABLE
+-- 6. LIFESTYLE PROFILES TABLE
+CREATE TABLE IF NOT EXISTS public.lifestyle_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    age INT NOT NULL,
+    lifestyle TEXT NOT NULL,
+    health_conditions TEXT[] NOT NULL DEFAULT '{}',
+    home_location_id UUID REFERENCES public.saved_locations(id) ON DELETE SET NULL,
+    has_air_purifier BOOLEAN NOT NULL DEFAULT FALSE,
+    uses_n95_mask BOOLEAN NOT NULL DEFAULT FALSE,
+    ventilates_windows BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.lifestyle_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own lifestyle_profiles" ON public.lifestyle_profiles
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own lifestyle_profiles" ON public.lifestyle_profiles
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own lifestyle_profiles" ON public.lifestyle_profiles
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own lifestyle_profiles" ON public.lifestyle_profiles
+    FOR DELETE USING (auth.uid() = user_id);
+
+
+-- 7. ENVIRONMENTAL ACTIONS TABLE
 CREATE TABLE IF NOT EXISTS public.environmental_actions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -173,5 +205,61 @@ CREATE TRIGGER set_profiles_updated_at
 -- Apply timestamp trigger to household_preferences
 CREATE TRIGGER set_household_preferences_updated_at
     BEFORE UPDATE ON public.household_preferences
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+-- Apply timestamp trigger to lifestyle_profiles
+DROP TRIGGER IF EXISTS set_lifestyle_profiles_updated_at ON public.lifestyle_profiles;
+CREATE TRIGGER set_lifestyle_profiles_updated_at
+    BEFORE UPDATE ON public.lifestyle_profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+
+-- ============================================================================
+-- 8. PHASE 4 EXTENSIONS — Multi-Stop Routines, Time Windows & Active Days
+-- ============================================================================
+-- Extends the existing commute_routines / daily_routine_segments tables so a
+-- routine can be a named, recurring, multi-stop path with departure/return
+-- windows, active days, and the new micro-environment/transit taxonomy.
+--
+-- Legacy columns (transport_mode, commute_frequency, commute_duration_minutes)
+-- are relaxed to nullable and their CHECKs are dropped, so new routines are
+-- not forced to pick legacy values. This block is a one-shot migration
+-- (run in the Supabase SQL editor) — plain ADD CONSTRAINT / DROP NOT NULL
+-- statements are not re-runnable, same as the CREATE POLICY statements above.
+
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS transit_mode TEXT;
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS departure_time TEXT;
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS return_time TEXT;
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS active_days TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE public.commute_routines ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE public.commute_routines ALTER COLUMN transport_mode DROP NOT NULL;
+ALTER TABLE public.commute_routines ALTER COLUMN commute_frequency DROP NOT NULL;
+ALTER TABLE public.commute_routines ALTER COLUMN commute_duration_minutes DROP NOT NULL;
+
+ALTER TABLE public.commute_routines DROP CONSTRAINT IF EXISTS commute_routines_transport_mode_check;
+ALTER TABLE public.commute_routines DROP CONSTRAINT IF EXISTS commute_routines_commute_frequency_check;
+ALTER TABLE public.commute_routines ADD CONSTRAINT commute_routines_transit_mode_check
+    CHECK (transit_mode IN ('walk', 'two_wheeler', 'auto_non_ac', 'car_ac', 'metro_bus', 'indoor_purifier', 'indoor_natural'));
+
+-- Link routine segments to their routine and allow free map pinpoints
+ALTER TABLE public.daily_routine_segments ADD COLUMN IF NOT EXISTS routine_id UUID;
+ALTER TABLE public.daily_routine_segments ADD CONSTRAINT daily_routine_segments_routine_id_fkey
+    FOREIGN KEY (routine_id) REFERENCES public.commute_routines(id) ON DELETE CASCADE;
+ALTER TABLE public.daily_routine_segments ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE public.daily_routine_segments ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+
+ALTER TABLE public.daily_routine_segments DROP CONSTRAINT IF EXISTS daily_routine_segments_environment_type_check;
+ALTER TABLE public.daily_routine_segments ADD CONSTRAINT daily_routine_segments_environment_type_check
+    CHECK (environment_type IN ('Indoor', 'Outdoor', 'Roadside', 'Metro', 'Vehicle', 'Other',
+                                'walk', 'two_wheeler', 'auto_non_ac', 'car_ac', 'metro_bus', 'indoor_purifier', 'indoor_natural'));
+
+DROP TRIGGER IF EXISTS set_commute_routines_updated_at ON public.commute_routines;
+CREATE TRIGGER set_commute_routines_updated_at
+    BEFORE UPDATE ON public.commute_routines
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();

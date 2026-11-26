@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
-**Current Phase**: Phase 3 Complete (Interactive Map, Pinpoint Marker & Multi-Location Management)
-**Exact Next Step**: Begin Phase 4 — multi-profile lifestyle data, commute routines, Personal Exposure Score, and Left Sidebar shell.
+**Current Phase**: Phase 4 In Progress — 4.1/4.2/4.3 implementation complete, `npm run build` clean; awaiting Phase 4 Exit Gate
+**Exact Next Step**: (1) Run one-shot DB sections 6 & 8 of `worker/supabase_schema.sql` in the Supabase SQL editor (`lifestyle_profiles` table + RLS, `commute_routines`/`daily_routine_segments` column extensions). (2) Browser-verify Phase 4: Lifestyle Profiles CRUD + top-bar profile switcher, Routines page with "Check Routine AQI", and the Personal Exposure Score card on Dashboard + Routines. (3) After user confirms verification, commit all Phase 4 changes.
 
 ---
 
@@ -88,14 +88,33 @@
 - [x] Saved Locations: Action buttons (Refresh AQI / View on Map) inside drawer ✅
 - [x] Built-in CPCB station coordinate dictionary for 30+ major Indian stations across Bengaluru/Delhi/Mumbai/Chennai/Hyderabad/Kolkata (worker/src/lib/fetchers/cpcb.ts STATION_COORDINATE_DICT) ✅
 - [x] Dual NAQI + US EPA AQI returned from /api/aqi and displayed everywhere (Dashboard card + Saved Locations cards/drawers) ✅
-- [x] All changes committed locally; awaiting browser verification and local commit ✅
+- [x] All changes committed locally (`a9cef79`); Phase 3 verified by user ✅
 
-### Phase 4: Multi-Profile, Routines & Exposure Score
-- [ ] **multi-profile `lifestyle_profiles`**: multiple household/family profiles per login with age, lifestyle, health conditions, home base
-- [ ] **`commute_routines` & `daily_routine_segments`**: one-click "Check Routine AQI" multi-location comparison
-- [ ] **Personal Exposure Score** 0–100: time-weighted exposure across stored locations + routine segments
-- [ ] Routine AQI comparison UI (side-by-side pollutant grid)
-- [ ] **Phase 4 Exit Gate**: Verify multi-profile CRUD, routine AQI comparison, Exposure Score calculation
+### Phase 4: Multi-Profile, Routines & Exposure Score (In Progress)
+Phase 4 spec (user-confirmed 2026-11-26), following the foggy nature & frosted glass design system in `DESIGN.md`:
+
+- [x] **4.1 — Multi-Profile Lifestyle Support (`lifestyle_profiles`)**
+  - [x] SQL migration in `worker/supabase_schema.sql` section 6: `lifestyle_profiles` table (RLS `auth.uid() = user_id`) with `id`, `user_id`, `name`, `age`, `lifestyle`, `health_conditions` (text[]), `home_location_id` (nullable FK → `saved_locations`), `has_air_purifier`, `uses_n95_mask`, `ventilates_windows`, `is_active`
+  - [x] TS row types in `frontend/src/lib/supabase.ts` (`LifestyleProfileRow`, `LIFESTYLES`, `LOCATION_TYPES`)
+  - [x] `frontend/src/pages/LifestyleProfiles.tsx` — multi-profile CRUD (Self / Child / Senior Parent examples), set-active action
+  - [x] Quick active-profile switcher pill in the top bar (AppShell `ProfileSwitcherBar`, sticky under sidebar, Warm Dawn active state)
+- [x] **4.2 — Routines & One-Click Multi-Location AQI Check**
+  - [x] Schema extension in `worker/supabase_schema.sql` section 8 (`PHASE 4 EXTENSIONS`): `commute_routines` gains `name`, `transit_mode`, `departure_time`, `return_time`, `active_days`, `updated_at` (+ new CHECKs); `daily_routine_segments` gains `routine_id` FK + `latitude`/`longitude` + expanded env CHECK (`walk, two_wheeler, auto_non_ac, car_ac, metro_bus, indoor_purifier, indoor_natural`)
+  - [x] `frontend/src/pages/Routines.tsx` — create/edit recurring routines linking multiple stops from saved_locations or map pinpoints, with departure/return time windows, active days, transit/micro-environment modes
+  - [x] "Check Routine AQI" button per routine card → concurrent live `/api/aqi` fetches across all stops (`Promise.all` + `fetchStopAqi`)
+  - [x] Side-by-side NAQI & US AQI comparison per stop + deterministic actionable tips (safer departure timing, N95/purifier reminders, cleaner transit alternatives)
+- [x] **4.3 — Deterministic Personal Exposure Score Engine**
+  - [x] `frontend/src/lib/exposure.ts` — transparent 0–100 daily Personal Exposure Score + inhaled dose breakdown (live per-stop NAQI × duration in hours × transit/indoor attenuation × active profile's age + health sensitivity weights; null-NAQI stops excluded, NO station index averaging per PRD guardrail)
+  - [x] Score card + segment breakdown displayed on Dashboard (single-stop model for viewed location) and Routines (full routine) pages
+- [x] Replace `/lifestyle` & `/routines` self-Navigate placeholder routes in `App.tsx` with the real pages (awareness/history nav links now fall through to the catch-all redirect; `ProfilesProvider` wired around all protected routes)
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (`tsc -b` clean)
+- [ ] **⚠️ Manual DB step before verification**: Run the one-shot sections 6 & 8 of `worker/supabase_schema.sql` in the Supabase SQL editor (`lifestyle_profiles` table + RLS, plus the `commute_routines`/`daily_routine_segments` Phase 4 column extensions). These are `IF NOT EXISTS`/`ADD COLUMN IF NOT EXISTS` one-shot migrations, not part of the initial schema.
+- [ ] **Phase 4 Exit Gate**: Stop for user browser verification of multi-profile CRUD, routine AQI comparison, and Exposure Score calculation
+
+Superseded checklist items (kept for traceability):
+- [ ] multi-profile `lifestyle_profiles` — multiple household/family profiles per login with age, lifestyle, health conditions, home base (rolled up into 4.1)
+- [ ] Routine AQI comparison UI (side-by-side pollutant grid) (rolled up into 4.2)
+- [ ] Personal Exposure Score 0–100 (rolled up into 4.3)
 
 ### Phase 5: Hybrid Rule + Workers AI Routine Tips Engine
 - [ ] Deterministic Indian National AQI health rule engine in Cloudflare Worker

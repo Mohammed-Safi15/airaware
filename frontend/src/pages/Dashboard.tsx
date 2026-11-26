@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MapView } from "../components/MapView";
 import { SearchBar } from "../components/SearchBar";
 import { AlertCircle, LocateFixed, Wind } from "lucide-react";
 import { supabase, LOCATION_TYPES } from "../lib/supabase";
 import { useAuth } from "../App";
+import { useProfiles } from "../lib/profileContext";
+import { computeExposure, toExposureStop } from "../lib/exposure";
 import type { AQResponse, StationObservation } from "../types/aq";
 
 interface DashboardProps {}
@@ -26,6 +28,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 
 export function Dashboard({ }: DashboardProps) {
   const { user } = useAuth();
+  const { activeProfile } = useProfiles();
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
   const [locationName, setLocationName] = useState("Bengaluru");
@@ -70,6 +73,15 @@ export function Dashboard({ }: DashboardProps) {
       setLoading(false);
     }
   }
+
+  // Personal Exposure Score (Phase 4.3) — deterministic single-stop model for
+  // the currently viewed location. One hour of outdoor presence at this
+  // place's live NAQI, weighted by the active profile's sensitivity + habits.
+  const exposure = useMemo(() => {
+    if (!activeProfile || !data) return null;
+    const stop = toExposureStop(locationName, 1, "Outdoor", data);
+    return computeExposure([stop], activeProfile, null, null);
+  }, [activeProfile, data, locationName]);
 
   function handleSearchSelect(queryLat: number, queryLng: number, name: string) {
     void fetchAQI(queryLat, queryLng, name);
@@ -175,6 +187,33 @@ export function Dashboard({ }: DashboardProps) {
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600"></div>
             <p className="mt-3 text-sm text-slate-500">Fetching air quality data…</p>
           </div>
+        </div>
+      )}
+
+      {/* Personal Exposure Score Card */}
+      {exposure && data && !loading && !error && (
+        <div className="rounded-xl border border-[var(--color-sage-border)] bg-[var(--color-sage-border)]/60 p-4 backdrop-blur-md">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Personal Exposure Score
+          </p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-bold" style={{ color: exposure.scoreColor }}>
+              {exposure.score}
+            </span>
+            <span className="text-sm font-medium" style={{ color: exposure.scoreColor }}>
+              {exposure.scoreLabel}
+            </span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${exposure.score}%`, background: exposure.scoreColor }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {activeProfile?.name} · sensitivity ×{exposure.sensitivity} ·{" "}
+            {data._meta?.naqi ?? "–"} NAQI for 1h outdoor
+          </p>
         </div>
       )}
 

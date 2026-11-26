@@ -12,6 +12,7 @@ import {
   Wind,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useProfiles } from "../lib/profileContext";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AppShellProps {
@@ -128,9 +129,60 @@ export function AppShell({ user, setUser }: AppShellProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="min-w-0 flex-1 px-6 py-6">
-        <Outlet />
+      <main className="min-w-0 flex-1">
+        <ProfileSwitcherBar />
+        <div className="px-6 py-6">
+          <Outlet />
+        </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * Slim sticky top bar with the active lifestyle-profile switcher (Phase 4.1).
+ * Each household profile becomes a pill; the active one is highlighted in
+ * Warm Dawn. Clicking any pill instantly flips the active profile
+ * (optimistic + persisted) so every downstream exposure score re-weights.
+ */
+function ProfileSwitcherBar() {
+  const { profiles, activeProfile, switchActive } = useProfiles();
+
+  return (
+    <div className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--color-sage-border)] bg-white/70 px-6 py-2.5 backdrop-blur-md">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          Scoring profile
+        </span>
+        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
+          {profiles.length === 0 ? (
+            <span className="truncate text-sm text-slate-400">
+              No profiles — using adult baseline
+            </span>
+          ) : (
+            profiles.map((p) => {
+              const on = activeProfile?.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => switchActive(p.id)}
+                  title={on ? "Active profile" : `Switch to ${p.name}`}
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    on
+                      ? "bg-[var(--color-warm-dawn)] text-[var(--color-deep-pine)] shadow-sm"
+                      : "border border-[var(--color-sage-border)] bg-white/60 text-slate-600 hover:bg-white"
+                  }`}
+                >
+                  {p.name}
+                  <span className={`ml-1.5 text-[10px] ${on ? "opacity-70" : "opacity-50"}`}>
+                    {p.age}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }
