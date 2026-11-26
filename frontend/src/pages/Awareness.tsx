@@ -38,7 +38,8 @@ export function AwarenessPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Indian NAQI Tier Table (0–500)
           </p>
-          <table className="mt-3 w-full text-xs caption-side table-auto">
+          <div className="overflow-x-auto">
+          <table className="mt-3 w-full min-w-[320px] text-xs caption-side table-auto">
             <thead>
               <tr>
                 <th className="text-left text-slate-500">Tier</th>
@@ -116,6 +117,7 @@ export function AwarenessPage() {
               </tr>
             </tbody>
           </table>
+          </div>
           <p className="mt-3 text-xs text-slate-500">
             US EPA AQI uses analogous breakpoints but maps pollutants and color
             codes through the federal EPA scheme. CPCB NAQI retains the Indian

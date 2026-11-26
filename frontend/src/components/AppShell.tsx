@@ -1,15 +1,18 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   BarChart3,
   BookOpen,
   LayoutDashboard,
   LogOut,
   MapPin,
+  Menu,
   Route,
   Settings,
   User,
   Users,
   Wind,
+  X,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useProfiles } from "../lib/profileContext";
@@ -40,6 +43,13 @@ function bottomLinkClass(isActive: boolean) {
 
 export function AppShell({ user, setUser }: AppShellProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Auto-close the mobile drawer on every route change.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -48,15 +58,33 @@ export function AppShell({ user, setUser }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-misty-alabaster)]">
-      {/* Left Sidebar — sticky, full viewport height */}
-      <aside className="sticky top-0 z-40 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[var(--color-deep-pine)] text-white">
-        {/* Top-Left Zone: Brand */}
+    <div className="flex min-h-screen overflow-x-hidden bg-[var(--color-misty-alabaster)]">
+      {/* Mobile drawer — off-canvas below lg, full height with bottom-pinned Settings/Account/Sign Out */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[var(--color-deep-pine)] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-40 lg:w-64 lg:translate-x-0 ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
+        {/* Drawer header: brand + mobile close button */}
         <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-white/10 px-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-deep-pine-soft)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-deep-pine-soft)]">
             <Wind className="h-5 w-5 text-[var(--color-warm-dawn)]" />
           </span>
-          <h1 className="text-lg font-bold tracking-tight">AirAware</h1>
+          <h1 className="flex-1 text-lg font-bold tracking-tight">AirAware</h1>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close navigation"
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-white lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Top-Left Zone: 6 primary feature links, anchored at the top */}
@@ -130,8 +158,22 @@ export function AppShell({ user, setUser }: AppShellProps) {
 
       {/* Main Content */}
       <main className="min-w-0 flex-1">
+        {/* Mobile top bar — hamburger + brand, shown below lg */}
+        <div className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--color-sage-border)] bg-[var(--color-deep-pine)] px-4 text-white lg:hidden">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open navigation"
+            className="rounded-lg p-2 transition-colors hover:bg-white/10 active:scale-95"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <Wind className="h-4 w-4 text-[var(--color-warm-dawn)]" />
+            AirAware
+          </span>
+        </div>
         <ProfileSwitcherBar />
-        <div className="px-6 py-6">
+        <div className="px-4 py-4 lg:px-6 lg:py-6">
           <Outlet />
         </div>
       </main>
@@ -149,7 +191,7 @@ function ProfileSwitcherBar() {
   const { profiles, activeProfile, switchActive } = useProfiles();
 
   return (
-    <div className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--color-sage-border)] bg-white/70 px-6 py-2.5 backdrop-blur-md">
+    <div className="sticky top-14 z-30 flex items-center justify-between gap-3 border-b border-[var(--color-sage-border)] bg-white/70 px-4 py-2.5 backdrop-blur-md lg:top-0 lg:px-6">
       <div className="flex min-w-0 items-center gap-2">
         <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           Scoring profile

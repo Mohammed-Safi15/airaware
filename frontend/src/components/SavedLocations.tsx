@@ -582,8 +582,8 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{loc.location_name}</p>
-                      <p className="truncate text-xs text-slate-500">
+                      <p className="truncate text-sm font-medium text-slate-900" title={loc.location_name}>{loc.location_name}</p>
+                      <p className="truncate text-xs text-slate-500" title={`${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)} · ${loc.location_type}`}>
                         {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)} · {loc.location_type}
                       </p>
                       {badge && (

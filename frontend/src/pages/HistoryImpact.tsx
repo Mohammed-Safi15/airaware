@@ -480,7 +480,7 @@ export function HistoryImpactPage() {
         {/* Cumulative totals */}
         <div className="mt-5 rounded-xl border border-[var(--color-sage-border)] bg-white p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Cumulative impact ({activeLabel})</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
             <div>
               <p className="text-xl font-bold tabular-nums text-[var(--color-deep-pine)]">{cumulative.entries}</p>
               <p className="text-[11px] text-slate-400">protective actions logged</p>

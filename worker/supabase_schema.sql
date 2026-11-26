@@ -263,3 +263,59 @@ CREATE TRIGGER set_commute_routines_updated_at
     BEFORE UPDATE ON public.commute_routines
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
+
+
+-- ============================================================================
+-- 9. PHASE 5C EXTENSIONS — Exposure Check Snapshots & Protective Actions
+-- ============================================================================
+-- One-shot migration (run in the Supabase SQL editor). Backs the Phase 5C
+-- "History & My Impact" page:
+--   • exposure_check_snapshots — a saved "Check Routine AQI" run (exposure
+--     score, total inhaled dose, per-stop NAQI summary) attributed to the
+--     active lifestyle profile
+--   • environmental_actions gains profile attribution, protective-action
+--     types, duration/frequency inputs, and a PM2.5 dose-avoided column so
+--     the My Impact Calculator can aggregate personal impact totals.
+
+-- 9a. Exposure check snapshots table
+CREATE TABLE IF NOT EXISTS public.exposure_check_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    profile_id UUID REFERENCES public.lifestyle_profiles(id) ON DELETE SET NULL,
+    routine_id UUID REFERENCES public.commute_routines(id) ON DELETE SET NULL,
+    routine_name TEXT NOT NULL DEFAULT '',
+    exposure_score INT NOT NULL DEFAULT 0 CHECK (exposure_score >= 0 AND exposure_score <= 100),
+    total_dose NUMERIC NOT NULL DEFAULT 0 CHECK (total_dose >= 0),
+    stop_naqi_summary JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.exposure_check_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own exposure_check_snapshots" ON public.exposure_check_snapshots
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own exposure_check_snapshots" ON public.exposure_check_snapshots
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own exposure_check_snapshots" ON public.exposure_check_snapshots
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own exposure_check_snapshots" ON public.exposure_check_snapshots
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 9b. environmental_actions — profile attribution & protective actions
+ALTER TABLE public.environmental_actions ADD COLUMN IF NOT EXISTS profile_id UUID;
+ALTER TABLE public.environmental_actions ADD CONSTRAINT environmental_actions_profile_id_fkey
+    FOREIGN KEY (profile_id) REFERENCES public.lifestyle_profiles(id) ON DELETE SET NULL;
+
+-- Widen the action_type CHECK to include the protective-action logger types.
+ALTER TABLE public.environmental_actions DROP CONSTRAINT IF EXISTS environmental_actions_action_type_check;
+ALTER TABLE public.environmental_actions ADD CONSTRAINT environmental_actions_action_type_check
+    CHECK (action_type IN ('Public Transit', 'Car Trip Avoided', 'Energy Saving', 'No Open Burning',
+                           'N95 Mask', 'HEPA Purifier', 'Rescheduled Outdoor Activity',
+                           'Sealed Transit (Metro/AC)'));
+
+ALTER TABLE public.environmental_actions ADD COLUMN IF NOT EXISTS duration_hours NUMERIC CHECK (duration_hours >= 0);
+ALTER TABLE public.environmental_actions ADD COLUMN IF NOT EXISTS frequency_days INT CHECK (frequency_days > 0);
+ALTER TABLE public.environmental_actions ADD COLUMN IF NOT EXISTS pm25_dose_avoided NUMERIC CHECK (pm25_dose_avoided >= 0);

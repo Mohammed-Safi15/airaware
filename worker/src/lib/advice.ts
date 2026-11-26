@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // Phase 5 — Hybrid advice engine: deterministic CPCB NAQI + profile-sensitivity
-// rules, with a Cloudflare Workers AI layer (llama-3.1-8b-instruct) that
-// rephrases and contextualises the deterministic result. The deterministic
+// rules, with a Cloudflare Workers AI layer (llama-3.1-8b-instruct-fast primary,
+// llama-3.3-70b-instruct-fp8-fast secondary) that rephrases and contextualises
+// the deterministic result. The deterministic
 // rules are always computed; the AI output is validated against them and
 // discarded (fallback) when the binding is missing, times out, or returns
 // unparseable content. PRD guardrails hold: advice is grounded strictly in
@@ -216,10 +217,12 @@ export function deterministicAdvice(req: AdviceRequest): DeterministicAdvice {
 }
 
 // ---------------------------------------------------------------------------
-// Workers AI layer (llama-3.1-8b-instruct) with hard timeout + fallback
+// Workers AI layer with hard timeout + fallback (primary model first, then
+// secondary, then deterministic rules)
 // ---------------------------------------------------------------------------
 
-const AI_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const AI_MODEL_FALLBACK = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const AI_TIMEOUT_MS = 30_000;
 const TIP_KINDS: readonly string[] = ["departure", "transit", "mask", "purifier", "activity", "general"];
 
@@ -268,42 +271,56 @@ export async function buildAdvice(req: AdviceRequest, ai: Ai | undefined): Promi
 
   if (!ai) {
     base.ai_error = "AI binding unbound";
+    console.warn("[advice] AI binding unbound — degrading to rules fallback");
     return base;
   }
 
-  const aiAttempt = (async () => {
-    const race: Promise<AiResponse | { timedOut: true }> = ai.run(AI_MODEL, {
-      raw: true,
-      messages: aiMessages(det, req),
-      temperature: 0.3,
-      max_tokens: 700,
-    }) as Promise<AiResponse | { timedOut: true }>;
-    const timeout = new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), AI_TIMEOUT_MS));
-    const rawRes = await Promise.race([race, timeout]);
-    if ("timedOut" in rawRes) throw new Error(`AI timeout after ${AI_TIMEOUT_MS}ms`);
-    if (typeof rawRes.response !== "string") throw new Error("AI returned no text payload");
-    const parsed = extractJson(rawRes.response);
-    if (!parsed || typeof parsed.summary !== "string" || !Array.isArray(parsed.tips)) {
-      throw new Error("AI output was not valid advice JSON");
+  // Try primary model first, then fallback model, then deterministic rules
+  const modelSequence: string[] = [AI_MODEL, AI_MODEL_FALLBACK];
+  let lastError: string | undefined;
+
+  for (const model of modelSequence) {
+    try {
+      const aiAttempt = (async () => {
+        const race: Promise<AiResponse | { timedOut: true }> = ai.run(model, {
+          raw: true,
+          messages: aiMessages(det, req),
+          temperature: 0.3,
+          max_tokens: 700,
+        }) as Promise<AiResponse | { timedOut: true }>;
+        const timeout = new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), AI_TIMEOUT_MS));
+        const rawRes = await Promise.race([race, timeout]);
+        if ("timedOut" in rawRes) throw new Error(`AI timeout after ${AI_TIMEOUT_MS}ms`);
+        if (typeof rawRes.response !== "string") throw new Error("AI returned no text payload");
+        const parsed = extractJson(rawRes.response);
+        if (!parsed || typeof parsed.summary !== "string" || !Array.isArray(parsed.tips)) {
+          throw new Error("AI output was not valid advice JSON");
+        }
+        const tips: AdviceTip[] = parsed.tips
+          .filter((t) => typeof t?.text === "string" && t.text.length > 0)
+          .filter((t) => typeof t?.kind === "string" && TIP_KINDS.includes(t.kind as string))
+          .slice(0, 4)
+          .map((t) => ({ kind: t.kind as AdviceTipKind, text: t.text as string, rule: "ai" }));
+        return { summary: parsed.summary.trim(), tips };
+      })();
+
+      const aiOut = await aiAttempt;
+      return {
+        ...base,
+        source: "ai",
+        summary: aiOut.summary,
+        tips: aiOut.tips.length > 0 ? [...aiOut.tips, ...det.tips] : det.tips,
+      };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[advice] AI model ${model} failed: ${lastError}`);
+      // Continue to next model in sequence
+      continue;
     }
-    const tips: AdviceTip[] = parsed.tips
-      .filter((t) => typeof t?.text === "string" && t.text.length > 0)
-      .filter((t) => typeof t?.kind === "string" && TIP_KINDS.includes(t.kind as string))
-      .slice(0, 4)
-      .map((t) => ({ kind: t.kind as AdviceTipKind, text: t.text as string, rule: "ai" }));
-    return { summary: parsed.summary.trim(), tips };
-  })();
-
-  try {
-    const aiOut = await aiAttempt;
-    return {
-      ...base,
-      source: "ai",
-      summary: aiOut.summary,
-      tips: aiOut.tips.length > 0 ? [...aiOut.tips, ...det.tips] : det.tips,
-    };
-  } catch (err) {
-    base.ai_error = err instanceof Error ? err.message : String(err);
-    return base;
   }
+
+  // All models failed — degrade to deterministic rules
+  base.ai_error = lastError || "AI model failed";
+  console.warn(`[advice] all AI models failed — degrading to rules fallback (${base.ai_error})`);
+  return base;
 }

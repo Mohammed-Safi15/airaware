@@ -533,7 +533,7 @@ export function RoutinesPage() {
                 {check && (
                   <div className="mt-4 space-y-4">
                     {/* Score + side-by-side AQI */}
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                           Personal Exposure
@@ -552,7 +552,7 @@ export function RoutinesPage() {
                         </p>
                       </div>
 
-                      <div className="w-44 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="w-full rounded-xl border border-slate-100 bg-slate-50 p-3 sm:w-44">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                           Per-stop AQI
                         </p>
@@ -666,18 +666,17 @@ export function RoutinesPage() {
                     {advice.status === "error" && (
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wider text-red-500">Advice unavailable</p>
-                        <p className="mt-1 text-sm text-red-600">{advice.error}</p>
+                        <p className="mt-1 text-sm text-red-600">
+                          The advice service couldn't be reached right now. Try the check again in a moment.
+                        </p>
                       </div>
                     )}
                     {advice.status === "success" && outcome && (
                       <>
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {outcome.source === "ai" ? "AI + Rules Advice" : "Rules Fallback Advice"}
+                            {outcome.source === "ai" ? "AI + Rules" : "Rules-Based"}
                           </p>
-                          {outcome.ai_error && (
-                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">degraded</span>
-                          )}
                         </div>
                         {outcome.summary && (
                           <p className="mt-2 text-sm text-slate-700">{outcome.summary}</p>
@@ -687,18 +686,15 @@ export function RoutinesPage() {
                             {outcome.tips.map((tip, i) => (
                               <li
                                 key={i}
-                                className="flex items-start gap-2 rounded-lg bg-[var(--color-deep-pine-soft)] px-3 py-2 text-xs text-[var(--color-deep-pine)]"
+                                className="flex items-start gap-2 rounded-lg bg-[var(--color-deep-pine-soft)] px-3 py-2 text-xs text-[var(--color-misty-alabaster)]"
                               >
-                                <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-deep-pine)]">
                                   {tip.kind}
                                 </span>
                                 <span>{tip.text}</span>
                               </li>
                             ))}
                           </ul>
-                        )}
-                        {outcome.ai_error && (
-                          <p className="mt-2 text-[11px] text-slate-400">AI layer degraded: {outcome.ai_error}</p>
                         )}
                       </>
                     )}
