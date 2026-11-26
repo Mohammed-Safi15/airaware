@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
 **Current Phase**: Phase 5 In Progress — Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide, History & My Impact
-**Exact Next Step**: Phase 4 verified by user and committed (`6a518c4`). Build Phase 5: (1) `POST /api/advice` Worker endpoint (deterministic rules + `env.AI` hybrid with fallback) + advice card in Routines.tsx + auto-save check snapshots; (2) `Awareness.tsx` editorial guide page; (3) `HistoryImpact.tsx` + new Supabase tables for exposure check logs & protective actions. Verify `npx tsc --noEmit` in `worker/` and `npm run build` in `frontend/`, output the new SQL migration section, then stop at the Phase 5 Exit Gate.
+**Exact Next Step**: `POST /api/advice` Worker endpoint built (deterministic rules + `env.AI` llama-3.1-8b-instruct hybrid with fallback, `npx tsc --noEmit` clean in `worker/`, frontend build clean). Remaining Phase 5: (1) advice card in Routines.tsx calling `/api/advice` + auto-save check snapshots; (2) `Awareness.tsx` editorial guide page; (3) `HistoryImpact.tsx` + new Supabase tables for exposure check logs & protective actions. Then stop at the Phase 5 Exit Gate.
 
 ---
 
@@ -119,9 +119,12 @@ Superseded checklist items (kept for traceability):
 - [ ] Personal Exposure Score 0–100 (rolled up into 4.3)
 
 ### Phase 5: Hybrid Rule + Workers AI Routine Tips Engine
-- [ ] Deterministic Indian National AQI health rule engine in Cloudflare Worker
-- [ ] Cloudflare Workers AI integration (`env.AI`) for contextual routine tips
-- [ ] Fallback mechanism (deterministic rules if AI fails/times out)
+- [x] **5.1 — `POST /api/advice` Worker endpoint** (`worker/src/lib/advice.ts` + route in `worker/src/index.ts`)
+  - [x] Deterministic CPCB NAQI + profile-sensitivity rule engine (rules R1–R8: data-availability, category actions, rush-hour departure, transit swaps, N95, HEPA purifier, sensitive-group flags, exposure-band framing)
+  - [x] Cloudflare Workers AI layer (`env.AI`, `@cf/meta/llama-3.1-8b-instruct`, raw mode, 30s `Promise.race` timeout) that rephrases/contextualises the deterministic result; output schema-validated (strict JSON, kind whitelist, ≤4 tips) — any unbound/timeout/unparsable failure degrades to `source: "rules-fallback"` with `ai_error` set
+  - [x] CORS extended to `GET, POST`; `wrangler.toml` already had `[ai] binding = "AI"`
+  - [x] `npx tsc --noEmit` in `worker/` zero errors; `npm run build` in `frontend/` clean ✅
+- [ ] Advice card in Routines.tsx calling `/api/advice` + auto-save check snapshots
 - [ ] AQI Awareness & Health Guide page
 - [ ] History & My Impact Calculator page
 - [ ] **Phase 5 Exit Gate**: Verify hybrid AI precautions and fallback robustness

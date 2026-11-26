@@ -3,6 +3,7 @@ import { fetchCPCBRecords, buildCPCBStation, groupByStation } from "./lib/fetche
 import { fetchOpenAQLocations, buildOpenAQStation } from "./lib/fetchers/openaq.js";
 import { fetchOpenMeteo, buildOpenMeteoStation } from "./lib/fetchers/open-meteo.js";
 import { toNAQI, category, toUSAQI, usaCategory } from "./lib/nqi.js";
+import { buildAdvice, type AdviceRequest } from "./lib/advice.js";
 import type { AQResponse, StationObservation, Reliability } from "./types/aq.js";
 
 // ---------------------------------------------------------------------------
@@ -76,7 +77,7 @@ function classifyReliability(station: StationObservation): StationObservation {
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
@@ -101,12 +102,93 @@ export default {
           environment: env.ENVIRONMENT || "production",
         });
       case "/api/aqi":
+        if (request.method !== "GET") return json({ error: "Method Not Allowed" }, 405);
         return handleAQI(url, env, ctx);
+      case "/api/advice":
+        if (request.method !== "POST") return json({ error: "Method Not Allowed. POST with JSON body." }, 405);
+        return handleAdvice(request, env, ctx);
       default:
         return json({ error: "Not Found", endpoint: url.pathname }, 404);
     }
   },
 };
+
+// ---------------------------------------------------------------------------
+// POST /api/advice — hybrid deterministic + Workers AI routine tips
+// ---------------------------------------------------------------------------
+
+function parseAdviceRequest(body: unknown): AdviceRequest | string {
+  if (!body || typeof body !== "object") return "Body must be a JSON object.";
+  const b = body as Record<string, unknown>;
+  const stopsIn = Array.isArray(b.stops) ? b.stops : null;
+  if (!stopsIn || stopsIn.length === 0) return "Field 'stops' must be a non-empty array of routine stops.";
+
+  const stops: AdviceRequest["stops"] = [];
+  for (const [i, raw] of stopsIn.entries()) {
+    const s = raw as Record<string, unknown>;
+    if (!s || typeof s.label !== "string" || s.label.length === 0) {
+      return `stops[${i}].label must be a non-empty string.`;
+    }
+    const naqi = typeof s.naqi === "number" && Number.isFinite(s.naqi) ? s.naqi : null;
+    if (naqi !== null && (naqi < 0 || naqi > 500)) return `stops[${i}].naqi out of plausible range (0–500).`;
+    stops.push({
+      label: s.label.slice(0, 120),
+      naqi,
+      usAqi: typeof s.usAqi === "number" && Number.isFinite(s.usAqi) ? s.usAqi : null,
+      categoryLabel: typeof s.categoryLabel === "string" ? s.categoryLabel.slice(0, 40) : undefined,
+      hours: typeof s.hours === "number" && Number.isFinite(s.hours) ? Math.min(Math.max(s.hours, 0), 24) : undefined,
+      environmentType: typeof s.environmentType === "string" ? s.environmentType.slice(0, 40) : undefined,
+    });
+  }
+
+  let profile: AdviceRequest["profile"] = null;
+  if (b.profile && typeof b.profile === "object") {
+    const p = b.profile as Record<string, unknown>;
+    profile = {
+      name: typeof p.name === "string" ? p.name.slice(0, 80) : "You",
+      age: typeof p.age === "number" && Number.isFinite(p.age) ? Math.min(Math.max(p.age, 0), 120) : 35,
+      lifestyle: typeof p.lifestyle === "string" ? p.lifestyle.slice(0, 60) : "Other",
+      health_conditions: Array.isArray(p.health_conditions) ? p.health_conditions.map((c) => String(c)).slice(0, 12) : [],
+      has_air_purifier: p.has_air_purifier === true,
+      uses_n95_mask: p.uses_n95_mask === true,
+      ventilates_windows: p.ventilates_windows === true,
+    };
+  }
+
+  const exposureScore =
+    typeof b.exposureScore === "number" && Number.isFinite(b.exposureScore)
+      ? Math.min(Math.max(b.exposureScore, 0), 100)
+      : null;
+
+  return {
+    profile,
+    stops,
+    exposureScore,
+    departureTime: typeof b.departureTime === "string" ? b.departureTime.slice(0, 5) : undefined,
+    transitMode: typeof b.transitMode === "string" ? b.transitMode.slice(0, 30) : undefined,
+  };
+}
+
+async function handleAdvice(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body." }, 400);
+  }
+
+  const parsed = parseAdviceRequest(body);
+  if (typeof parsed === "string") return json({ error: parsed }, 400);
+
+  const startedAt = Date.now();
+  const outcome = await buildAdvice(parsed, env.AI);
+  ctx.waitUntil(
+    (async () => {
+      console.log(`[advice] source=${outcome.source} tips=${outcome.tips.length} ${outcome.ai_error ? `ai_error=${outcome.ai_error} ` : ""}took=${Date.now() - startedAt}ms`);
+    })(),
+  );
+  return json(outcome, 200, { "Cache-Control": "no-store" });
+}
 
 async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
   const lat = parseFloat(url.searchParams.get("lat") ?? "");
