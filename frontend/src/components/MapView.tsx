@@ -62,7 +62,12 @@ export const MapView: React.FC<MapViewProps> = ({
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const userPinRef = useRef<L.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Keep the latest onMapClick in a ref so the "click" listener is bound
+  // exactly once (in the init effect) without accumulating duplicates.
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
 
   // Initialize the Leaflet map once; React owns the DOM hierarchy.
   // maxZoom is kept as default — we avoid passing the container here so
@@ -82,16 +87,16 @@ export const MapView: React.FC<MapViewProps> = ({
       L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 18 }).addTo(mapRef.current);
 
       // Fire onMapClick when the user clicks anywhere on the map background
-      // (not on a marker). Using 'mousedown' + 'mouseup' avoids the popup
-      // steal that 'click' sometimes does on the same element.
+      // (not on a marker). Read via ref so the handler always stays current
+      // without re-binding the listener.
       mapRef.current.on("click", (e: L.LeafletMouseEvent) => {
-        onMapClick?.(e.latlng.lat, e.latlng.lng);
+        onMapClickRef.current?.(e.latlng.lat, e.latlng.lng);
       });
     }
 
     // Only update view — never touch the DOM hierarchy ourselves.
     mapRef.current.setView([centerLat, centerLng], 13, { animate: false });
-  }, [centerLat, centerLng, onMapClick]);
+  }, [centerLat, centerLng]);
 
   // Cleanup on unmount (critical for React StrictMode double-mount)
   useEffect(() => {
@@ -100,9 +105,47 @@ export const MapView: React.FC<MapViewProps> = ({
         mapRef.current.remove();
         mapRef.current = null;
         markersRef.current = [];
+        userPinRef.current = null;
       }
     };
   }, []);
+
+  // Single red pinpoint for the active query location.
+  // Strictly one pin: the previous pin is always removed before adding a new
+  // one, so map clicks / search selections can never stack markers.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    userPinRef.current?.remove();
+
+    // Teardrop pin (44x44) with a soft pulse ring behind it. The ring class
+    // comes from index.css and is static under prefers-reduced-motion.
+    const pinIcon = L.divIcon({
+      html: `<div style="position:relative;width:44px;height:44px;">
+        <div class="pin-ring" style="position:absolute;left:10px;top:10px;width:24px;height:24px;"></div>
+        <svg viewBox="0 0 24 24" style="position:absolute;left:0;top:0;width:44px;height:44px;overflow:visible;filter:drop-shadow(0 2px 4px rgba(30,46,36,0.35));">
+          <path d="M2 21s1.9-5.6 3.9-8.5C7.9 8.7 9.3 6 12 6s4.1 2.7 6.1 6.5C20.1 15.4 22 21 22 21H2z" fill="#DC2626" stroke="#FFFFFF" stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="2.6" fill="#FFFFFF"/>
+        </svg>
+      </div>`,
+      className: "",
+      iconSize: [44, 44],
+      iconAnchor: [22, 42], // tip of the teardrop
+      popupAnchor: [0, -38],
+    });
+
+    const pin = L.marker([centerLat, centerLng], { icon: pinIcon }).addTo(map);
+    pin.bindPopup(
+      `<b>Query point</b><br/>${centerLat.toFixed(4)}, ${centerLng.toFixed(4)}`
+    );
+    userPinRef.current = pin;
+
+    return () => {
+      pin.remove();
+      if (userPinRef.current === pin) userPinRef.current = null;
+    };
+  }, [centerLat, centerLng]);
 
   // Update markers when stations change
   useEffect(() => {
@@ -112,24 +155,7 @@ export const MapView: React.FC<MapViewProps> = ({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Query point marker
-    const queryIcon = L.divIcon({
-      html: `<div style="
-        background: #6366f1;
-        border: 3px solid #fff;
-        border-radius: 50%;
-        width: 14px; height: 14px;
-        box-shadow: 0 0 0 4px rgba(99,102,241,0.3);
-      "></div>`,
-      className: "",
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
-    });
-    L.marker([centerLat, centerLng], { icon: queryIcon })
-      .addTo(map)
-      .bindPopup(`<b>Query point</b><br/>${centerLat.toFixed(4)}, ${centerLng.toFixed(4)}`);
-
-    // Station markers
+    // Station markers (the single red pinpoint is managed separately above)
     stations.forEach((st) => {
       const color = getAQIColor(st.aqi);
       const icon = L.divIcon({
@@ -155,12 +181,15 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [stations, centerLat, centerLng, onClick]);
 
   return (
-    <div className={`rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm ${className}`} style={{ height }}>
+    <div
+      className={`overflow-hidden border border-[#E6ECE7] bg-white/80 shadow-[0_8px_30px_rgb(30,46,36,0.06)] backdrop-blur-md rounded-2xl ${className}`}
+      style={{ height }}
+    >
       <div ref={containerRef} className="w-full h-full" />
       {stations.length > 0 && (
-        <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-600 flex items-center gap-4 flex-wrap">
+        <div className="px-3 py-2 bg-[#F4F6F3]/90 border-t border-[#E6ECE7] text-xs text-[#1E2E24] flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full bg-indigo-500" /> Your location
+            <span className="inline-block w-3 h-3 rounded-full bg-[#DC2626]" /> Your location
           </span>
           {[
             ["#22c55e", "Good"],

@@ -1,11 +1,40 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { Wind } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Route,
+  Settings,
+  User,
+  Users,
+  Wind,
+} from "lucide-react";
 import { supabase } from "../lib/supabase";
-import type { User } from "@supabase/supabase-js";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AppShellProps {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: SupabaseUser | null;
+  setUser: (user: SupabaseUser | null) => void;
+}
+
+/** Active / inactive styles for primary nav links (top-left zone). */
+function navLinkClass(isActive: boolean) {
+  return `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+    isActive
+      ? "bg-[var(--color-deep-pine-soft)] text-[var(--color-warm-dawn)]"
+      : "text-slate-300 hover:bg-white/5 hover:text-white"
+  }`;
+}
+
+/** Active / inactive styles for bottom-zone links (Settings / Account). */
+function bottomLinkClass(isActive: boolean) {
+  return `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+    isActive
+      ? "bg-[var(--color-deep-pine-soft)] text-[var(--color-warm-dawn)]"
+      : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+  }`;
 }
 
 export function AppShell({ user, setUser }: AppShellProps) {
@@ -18,92 +47,90 @@ export function AppShell({ user, setUser }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md shadow-sm">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Wind className="h-6 w-6 text-sky-600" />
-            <h1 className="text-lg font-bold tracking-tight text-slate-900">AirAware</h1>
-            <span className="hidden rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 sm:inline">
-              Phase 3
-            </span>
-          </div>
-
-          {user ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-xs text-slate-500 sm:block">
-                {user.email}
-              </span>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <Wind className="h-4 w-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
-            </div>
-          ) : (
-            <div className="text-xs text-slate-500">Not signed in</div>
-          )}
+    <div className="flex min-h-screen bg-[var(--color-misty-alabaster)]">
+      {/* Left Sidebar — sticky, full viewport height */}
+      <aside className="sticky top-0 z-40 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[var(--color-deep-pine)] text-white">
+        {/* Top-Left Zone: Brand */}
+        <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-white/10 px-5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-deep-pine-soft)]">
+            <Wind className="h-5 w-5 text-[var(--color-warm-dawn)]" />
+          </span>
+          <h1 className="text-lg font-bold tracking-tight">AirAware</h1>
         </div>
-      </header>
+
+        {/* Top-Left Zone: 6 primary feature links, anchored at the top */}
+        <nav className="flex flex-col gap-1 px-3 py-4">
+          <NavLink to="/dashboard" className={({ isActive }) => navLinkClass(isActive)}>
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink to="/lifestyle" className={({ isActive }) => navLinkClass(isActive)}>
+            <Users className="h-4 w-4 shrink-0" />
+            <span>Lifestyle Profiles</span>
+          </NavLink>
+
+          <NavLink to="/locations" className={({ isActive }) => navLinkClass(isActive)}>
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span>Saved Locations</span>
+          </NavLink>
+
+          <NavLink to="/routines" className={({ isActive }) => navLinkClass(isActive)}>
+            <Route className="h-4 w-4 shrink-0" />
+            <span>Routines</span>
+          </NavLink>
+
+          <NavLink to="/awareness" className={({ isActive }) => navLinkClass(isActive)}>
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span>AQI Awareness</span>
+          </NavLink>
+
+          <NavLink to="/history" className={({ isActive }) => navLinkClass(isActive)}>
+            <BarChart3 className="h-4 w-4 shrink-0" />
+            <span>History &amp; My Impact</span>
+          </NavLink>
+        </nav>
+
+        {/* Bottom-Left Zone: Settings / Account, pinned to the bottom */}
+        <div className="mt-auto border-t border-white/15 px-3 pb-5 pt-4">
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Settings
+          </p>
+
+          <NavLink to="/settings" className={({ isActive }) => bottomLinkClass(isActive)}>
+            <Settings className="h-4 w-4 shrink-0" />
+            <span>App &amp; Alert Preferences</span>
+          </NavLink>
+
+          <NavLink to="/account" className={({ isActive }) => bottomLinkClass(isActive)}>
+            <User className="h-4 w-4 shrink-0" />
+            <span>Account &amp; Login</span>
+          </NavLink>
+
+          <div className="mt-3 border-t border-white/10 pt-3">
+            {user?.email ? (
+              <p className="truncate px-3 text-xs text-slate-400" title={user.email}>
+                {user.email}
+              </p>
+            ) : (
+              <p className="px-3 text-xs text-slate-500">Not signed in</p>
+            )}
+
+            <button
+              onClick={handleSignOut}
+              className="mt-2 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </aside>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="min-w-0 flex-1 px-6 py-6">
         <Outlet />
       </main>
-
-      {/* Bottom Navigation */}
-      {user && (
-        <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/90 backdrop-blur-md z-40">
-          <div className="mx-auto flex max-w-5xl justify-around py-2">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition-colors ${
-                  isActive ? "text-sky-600" : "text-slate-500 hover:text-slate-700"
-                }`
-              }
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span className="text-xs font-medium">Dashboard</span>
-            </NavLink>
-
-            <NavLink
-              to="/locations"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition-colors ${
-                  isActive ? "text-sky-600" : "text-slate-500 hover:text-slate-700"
-                }`
-              }
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              <span className="text-xs font-medium">Locations</span>
-            </NavLink>
-
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition-colors ${
-                  isActive ? "text-sky-600" : "text-slate-500 hover:text-slate-700"
-                }`
-              }
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-xs font-medium">Settings</span>
-            </NavLink>
-          </div>
-        </nav>
-      )}
     </div>
   );
 }

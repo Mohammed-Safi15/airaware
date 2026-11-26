@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public.saved_locations (
     location_name TEXT NOT NULL,
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
-    location_type TEXT NOT NULL CHECK (location_type IN ('Home', 'Office', 'College', 'Other')),
+    location_type TEXT NOT NULL CHECK (location_type IN ('Home', 'Work', 'College', 'Gym', 'Other')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

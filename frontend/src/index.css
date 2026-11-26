@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
-/* Custom theme tokens for AirAware */
+/* Foggy Nature & Frosted Glass design tokens — see repo-root DESIGN.md */
 :root {
-  --color-brand-primary: #0ea5e9; /* Sky blue for clean air / trust */
-  --color-brand-dark: #0f172a;   /* Slate 900 for dark backgrounds */
-  --color-bg-soft: #f8fafc;      /* Slate 50 light background */
+  --color-deep-pine: #1e2e24; /* primary pill buttons, active sidebar items, headings */
+  --color-deep-pine-soft: #2d3e33; /* elevated deep-pine surfaces (active sidebar pill) */
+  --color-misty-alabaster: #f4f6f3; /* page canvas */
+  --color-sage-border: #e6ece7; /* subtle borders / dividers on light surfaces */
+  --color-warm-dawn: #c89666; /* accent — brand italic, focus rings, small highlights */
+
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -12,11 +17,46 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: var(--color-bg-soft);
-  color: var(--color-brand-dark);
+  font-family: var(--font-sans);
+  background-color: var(--color-misty-alabaster);
+  color: var(--color-deep-pine);
   margin: 0;
   min-height: 100vh;
+}
+
+/* Display typeface (Playfair Display) for headings; italic accents allowed */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Single red pinpoint marker — subtle pulse ring (MapView + Add Location picker).
+   Static ring only when the user prefers reduced motion. */
+@keyframes pin-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.7;
+  }
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.pin-ring {
+  border: 2px solid rgba(220, 38, 38, 0.55);
+  border-radius: 9999px;
+  animation: pin-pulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin-ring {
+    animation: none;
+    opacity: 0.4;
+  }
+  .animate-fade-in {
+    animation: none;
+  }
 }
 
 /* Leaflet map fix for dark mode compatibility */

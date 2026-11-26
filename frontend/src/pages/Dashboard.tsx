@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapView } from "../components/MapView";
 import { SearchBar } from "../components/SearchBar";
-import { AlertCircle, Wind } from "lucide-react";
+import { AlertCircle, LocateFixed, Wind } from "lucide-react";
+import { supabase, LOCATION_TYPES } from "../lib/supabase";
+import { useAuth } from "../App";
 import type { AQResponse, StationObservation } from "../types/aq";
 
 interface DashboardProps {}
@@ -9,13 +11,40 @@ interface DashboardProps {}
 const DEFAULT_LAT = 12.9716;
 const DEFAULT_LNG = 77.5946;
 
+// Nominatim reverse-geocode helper
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lng=${lng}&format=json&addressdetails=1&accept-language=en&user-agent=AirAware/1.0`);
+  if (!res.ok) return "Unknown location";
+  const data = await res.json();
+  if (data?.address?.city) return data.address.city;
+  if (data?.address?.town) return data.address.town;
+  if (data?.address?.village) return data.address.village;
+  if (data?.address?.road) return data.address.road;
+  if (data?.address?.suburb) return data.address.suburb;
+  return "Unknown location";
+}
+
 export function Dashboard({ }: DashboardProps) {
+  const { user } = useAuth();
   const [lat, setLat] = useState(DEFAULT_LAT);
   const [lng, setLng] = useState(DEFAULT_LNG);
   const [locationName, setLocationName] = useState("Bengaluru");
   const [data, setData] = useState<AQResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveLocationOpen, setSaveLocationOpen] = useState(false);
+  const [saveLocationType, setSaveLocationType] = useState<"Home" | "Work" | "College" | "Gym" | "Other">("Home");
+  const [saveLocationName, setSaveLocationName] = useState("");
+  const [locating, setLocating] = useState(false);
+
+  function Field({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+        {children}
+      </label>
+    );
+  }
 
   async function fetchAQI(queryLat: number, queryLng: number, name: string) {
     setLoading(true);
@@ -50,19 +79,76 @@ export function Dashboard({ }: DashboardProps) {
     // Clicking elsewhere on the map would re-query; kept simple for Phase 3
   }
 
+  async function handleMapClick(queryLat: number, queryLng: number) {
+    // Client-side India bounds check (per spec: lat 6.5–37.5, lng 68–97.5)
+    if (queryLat < 6.5 || queryLat > 37.5 || queryLng < 68 || queryLng > 97.5) return;
+    // Move pin + reverse-geocode + fetch AQI
+    const name = await reverseGeocode(queryLat, queryLng);
+    setLat(queryLat);
+    setLng(queryLng);
+    setLocationName(name);
+    void fetchAQI(queryLat, queryLng, name);
+  }
+
+  // Auto-fetch live AQI for the default pin on initial load
+  useEffect(() => {
+    void fetchAQI(DEFAULT_LAT, DEFAULT_LNG, "Bengaluru");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleUseMyLocation() {
+    if (!("geolocation" in navigator)) {
+      setError("Geolocation is not supported by this browser.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const gpsLat = pos.coords.latitude;
+        const gpsLng = pos.coords.longitude;
+        // India bounds check — stay within the supported region
+        if (gpsLat < 6.5 || gpsLat > 37.5 || gpsLng < 68 || gpsLng > 97.5) {
+          setLocating(false);
+          setError("Location is outside India — AirAware currently supports Pan-India AQI only.");
+          return;
+        }
+        const name = await reverseGeocode(gpsLat, gpsLng);
+        setLat(gpsLat);
+        setLng(gpsLng);
+        setLocationName(name);
+        setLocating(false);
+        void fetchAQI(gpsLat, gpsLng, name);
+      },
+      (err) => {
+        setLocating(false);
+        setError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied. Allow location access to use this feature."
+            : "Could not get your location. Try again or search for a city."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Air Quality Dashboard</h1>
-        {data && (
-          <span className="text-xs text-slate-500">
-            Last updated: {new Date(data.fetched_at).toLocaleTimeString()}
-          </span>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold text-slate-900">Air Quality Dashboard</h1>
 
-      {/* Search Bar */}
-      <SearchBar onSelect={handleSearchSelect} placeholder="Search city or area…" />
+      {/* Search Bar + Use My Location */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <SearchBar onSelect={handleSearchSelect} placeholder="Search city or area…" />
+        </div>
+        <button
+          onClick={handleUseMyLocation}
+          disabled={locating}
+          className="flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+        >
+          <LocateFixed className={`h-4 w-4 ${locating ? "animate-spin" : ""}`} />
+          <span>{locating ? "Locating…" : "Use My Location"}</span>
+        </button>
+      </div>
 
       {/* Current Location Badge */}
       <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
@@ -78,6 +164,7 @@ export function Dashboard({ }: DashboardProps) {
         centerLng={lng}
         stations={[]}
         onClick={handleMarkerClick}
+        onMapClick={handleMapClick}
         height="400px"
       />
 
@@ -151,6 +238,73 @@ export function Dashboard({ }: DashboardProps) {
                 <span>Distance: {data.primary.distance_km.toFixed(1)} km</span>
                 <span>Measured: {new Date(data.primary.measurement_timestamp).toLocaleString()}</span>
               </div>
+
+              {/* Save Location Quick Action */}
+              <button
+                onClick={() => setSaveLocationOpen(true)}
+                className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+              >
+                Save Location
+              </button>
+
+              {/* Save Location Modal */}
+              {saveLocationOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="rounded-xl border border-slate-300 bg-white p-6 max-w-sm w-full shadow-2xl">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Save Location</h3>
+                    <div className="mt-4 space-y-3">
+                      <Field label="Location Name">
+                        <input
+                          value={saveLocationName}
+                          onChange={(e) => setSaveLocationName(e.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                        />
+                      </Field>
+                      <Field label="Type">
+                        <select
+                          value={saveLocationType}
+                          onChange={(e) => setSaveLocationType(e.target.value as "Home" | "Work" | "College" | "Gym" | "Other")}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                        >
+                          {LOCATION_TYPES.map((t) => (
+                            <option key={t}>{t}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                    <div className="mt-6 flex gap-3">
+                      <button
+                        onClick={() => setSaveLocationOpen(false)}
+                        className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!saveLocationName.trim()) return;
+                          const { error } = await supabase.from("saved_locations").insert({
+                            user_id: user!.id,
+                            location_name: saveLocationName.trim(),
+                            latitude: lat,
+                            longitude: lng,
+                            location_type: saveLocationType,
+                          });
+                          if (error) alert(`Save failed: ${error.message}`);
+                          else {
+                            setSaveLocationOpen(false);
+                            setSaveLocationName("");
+                            setSaveLocationType("Home");
+                          }
+                        }}
+                        className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 

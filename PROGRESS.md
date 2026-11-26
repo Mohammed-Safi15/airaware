@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
-**Current Phase**: Phase 3 (Interactive Map, Geocoding & Multi-Location Management)
-**Exact Next Step**: Implement Leaflet map, debounced Photon/Nominatim search, /api/aqi station markers, and Supabase CRUD for saved_locations. Stop at the Phase 3 Exit Gate for verification.
+**Current Phase**: Phase 3 Complete (Interactive Map, Pinpoint Marker & Multi-Location Management)
+**Exact Next Step**: Begin Phase 4 — multi-profile lifestyle data, commute routines, Personal Exposure Score, and Left Sidebar shell.
 
 ---
 
@@ -15,7 +15,7 @@
 - **Language**: TypeScript (`.ts`/`.tsx`)
 - **Structure**: Monorepo (`frontend/` + `worker/`)
 - **Caching**: Cloudflare Workers Cache API (`caches.default`)
-- **UI & Icons**: Tailwind CSS + `lucide-react`
+- **UI & Icons**: Tailwind CSS v4 + `lucide-react`
 - **Graphify**: Enabled (Phase 2+)
 - **Cadence**: Strict phase-by-phase with Phase Exit Gates
 
@@ -51,7 +51,7 @@
 - [ ] Graphify setup — blocked by missing `anthropic` Python package; retry after install
 - [x] **Phase 2 Exit Gate**: Verify live AQI endpoint against deployed Worker ✅
 
-### [x] Phase 3: Interactive Map, Geocoding & Multi-Location Management
+### [x] Phase 3: Interactive Map, Pinpoint Marker & Multi-Location Management
 - [x] Install Leaflet + `@types/leaflet` (already present in devDependencies) ✅
 - [x] App shell with React Router — Dashboard, Locations, Settings pages with bottom nav ✅
 - [x] Debounced Photon/Nominatim geocoding search component (400ms default) ✅
@@ -59,8 +59,14 @@
 - [x] Supabase CRUD for `saved_locations` table (create, read, update, delete) ✅
 - [x] Location picker integrated with saved locations list ✅
 - [x] User geolocation ("Use My Location" button) ✅
+- [x] **Red pinpoint marker** (`#DC2626`) replacing blue user query dot in MapView.tsx ✅
+- [x] Single red pinpoint tracked in dedicated ref, cleared on every new pick ✅
+- [x] Top-right "Use My Location" button removed from Dashboard header ✅
+- [x] Redundant top bar "Locations / Use My Location / Search" removed from Locations.tsx ✅
+- [x] Locations.tsx opens directly with Saved Locations + Add Location panel ✅
+- [x] Sidebar red pinpoint consistency in SavedLocations picker ✅
 - [x] `tsc --noEmit` clean; `npx vite build` passes ✅
-- [x] **Phase 3 Exit Gate**: Verified — auth crash fixed via AuthCtx, Leaflet DOM hierarchy resolved in MapView.tsx (no more HierarchyRequestError), tsc clean, vite build passes; user has completed interactive verification of map + search + saved locations CRUD ✅
+- [x] **Phase 3 Exit Gate**: Verified — red click-anywhere IDW pinpoint, pinpoint-first Saved Locations with all-in-one panel + ▼ live AQI drawer, two-section left sidebar shell ✅
 - [x] India-only bounding box enforcement on worker `/api/aqi` (lat 8–35, lng 68–97, 400 for out-of-bounds) ✅
 - [x] Paginated CPCB fetch (offset loop) to bypass 1000-record cap ✅
 - [x] Open-Meteo zero-key fallback integrated as neighborhood-level proxy ✅
@@ -82,29 +88,32 @@
 - [x] Saved Locations: Action buttons (Refresh AQI / View on Map) inside drawer ✅
 - [x] Built-in CPCB station coordinate dictionary for 30+ major Indian stations across Bengaluru/Delhi/Mumbai/Chennai/Hyderabad/Kolkata (worker/src/lib/fetchers/cpcb.ts STATION_COORDINATE_DICT) ✅
 - [x] Dual NAQI + US EPA AQI returned from /api/aqi and displayed everywhere (Dashboard card + Saved Locations cards/drawers) ✅
-- [x] All changes committed locally; awaiting browser verification and local `wip: phase 3 pinpoint picker and saved location aqi drawer` commit.
+- [x] All changes committed locally; awaiting browser verification and local commit ✅
 
-### [ ] Phase 4: Core Feature Modules (Dashboard, Locations, Exposure, Recommendations)
-- [ ] Dashboard & Live AQI Monitoring widget with provenance badges
-- [ ] Location Management (Autocomplete search, Leaflet + OSM pin-drop map, GPS, CRUD)
-- [ ] My Daily Exposure calculator (micro-environments & time-weighted exposure)
-- [ ] Routine & Lifestyle Profile settings screen
-- [ ] **Phase 4 Exit Gate**: Verify core screens and location binding
+### Phase 4: Multi-Profile, Routines & Exposure Score
+- [ ] **multi-profile `lifestyle_profiles`**: multiple household/family profiles per login with age, lifestyle, health conditions, home base
+- [ ] **`commute_routines` & `daily_routine_segments`**: one-click "Check Routine AQI" multi-location comparison
+- [ ] **Personal Exposure Score** 0–100: time-weighted exposure across stored locations + routine segments
+- [ ] Routine AQI comparison UI (side-by-side pollutant grid)
+- [ ] **Phase 4 Exit Gate**: Verify multi-profile CRUD, routine AQI comparison, Exposure Score calculation
 
-### [ ] Phase 5: Hybrid AI Contextualisation Engine & Precautions
+### Phase 5: Hybrid Rule + Workers AI Routine Tips Engine
 - [ ] Deterministic Indian National AQI health rule engine in Cloudflare Worker
-- [ ] Cloudflare Workers AI integration (`env.AI`) for contextual explanation
+- [ ] Cloudflare Workers AI integration (`env.AI`) for contextual routine tips
 - [ ] Fallback mechanism (deterministic rules if AI fails/times out)
-- [ ] AI Health Assistant & Recommendations UI widget
+- [ ] AQI Awareness & Health Guide page
+- [ ] History & My Impact Calculator page
 - [ ] **Phase 5 Exit Gate**: Verify hybrid AI precautions and fallback robustness
 
-### [ ] Phase 6: Sustainability Tracker & Accessibility
-- [ ] Sustainability & Exposure Reduction Tracker (tracking green commute choices & estimated health benefits)
-- [ ] Offline resilience, loading skeletons, error boundaries, stale-data warnings
-- [ ] Accessibility (ARIA labels, keyboard navigation, contrast audit)
-- [ ] **Phase 6 Exit Gate**: Verify polish and accessibility
+### Phase 6: Public Homepage + Profile Builder + Motion Polish
+- [ ] **Public Homepage** (foggy nature hero, title, short intro, Log In / Sign Up): Deep Pine `#1E2E24`, Misty Alabaster `#F4F6F3`, Sage `#E6ECE7`, Warm Dawn `#C89666`
+- [ ] **Initial Profile Builder Wizard** post-signup: age, lifestyle, health conditions, home base selection
+- [ ] **`emil-design-eng` motion polish**: component press/hover states, popover origins, tooltip timing, transitions vs keyframes
+- [ ] State-machine / break edge-case checks (reduced motion, screen-size, auth state)
+- [ ] **Phase 6 Exit Gate**: Verify polish, motion, and edge-case robustness
 
-### [ ] Phase 7: Deployment, Verification & Final Handover
+### Phase 7: Production Security Audit + Cloudflare Workers + Pages Deployment
+- [ ] **Production security audit**: RLS policies, auth token validation, secrets handling (never hardcode API keys, never commit `.env` or `.dev.vars`)
 - [ ] Deploy Cloudflare Worker (`npx wrangler deploy`)
 - [ ] Build & deploy frontend to Cloudflare Pages (`npx wrangler pages deploy`)
 - [ ] End-to-end smoke test on live production URLs
@@ -114,9 +123,11 @@
 ---
 
 ## Architectural & Deployment Notes
-- **Supabase Database**: Schema defined in [supabase_schema.sql](worker/supabase_schema.sql) covering all 6 personal tables with Row Level Security (`auth.uid() = user_id`) and auto-updating `updated_at` triggers. Database: `https://ryzztiyjunbgwwkryovi.supabase.co`
-- **Cloudflare Worker**: Configured in [wrangler.toml](worker/wrangler.toml) with AI binding (`[ai] binding = "AI"`). Health endpoint at `http://localhost:8787/api/health`. Worker deployed locally for dev.
-- **Frontend**: Vite + React + TypeScript + Tailwind CSS + `lucide-react`. Dev server at `http://localhost:5173`.
+- **Supabase Database**: Schema defined in [`supabase_schema.sql`](worker/supabase_schema.sql) covering all 6 personal tables with Row Level Security (`auth.uid() = user_id`) and auto-updating `updated_at` triggers. Database: `https://ryzztiyjunbgwwkryovi.supabase.co`
+- **Cloudflare Worker**: Configured in [`wrangler.toml`](worker/wrangler.toml) with AI binding (`[ai] binding = "AI"`). Health endpoint at `http://localhost:8787/api/health`. Worker deployed locally for dev.
+- **Frontend**: Vite + React + TypeScript + Tailwind CSS v4 + `lucide-react`. Dev server at `http://localhost:5173`.
+- **Design System**: Foggy Nature & Frosted Glass palette — Deep Pine `#1E2E24`/`#2D3E33`, Misty Alabaster `#F4F6F3`, Sage `#E6ECE7`, Warm Dawn `#C89666`; CPCB NAQI semantic colors strictly for AQI pills/station indicators; frosted glass cards `bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl shadow-[0_8px_30px_rgb(30,46,36,0.06)]`; Playfair Display italic accents + Plus Jakarta Sans (tabular-nums for AQI figures); misty mountain/canopy backdrop with soft drifting cloud/fog overlays `pointer-events-none` + `prefers-reduced-motion` guard for public landing + split-card Login/Signup.
+- **Google Fonts**: `Playfair Display` + `Plus Jakarta Sans` linked in `frontend/index.html`.
 
 ---
 

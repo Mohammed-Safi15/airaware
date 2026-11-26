@@ -25,7 +25,7 @@ interface LocationRow {
 }
 
 const LIFESTYLES = ["Student", "Working Professional", "Home-Stayer", "Outdoor Worker", "Other"];
-const LOCATION_TYPES = ["Home", "Office", "College", "Other"];
+const LOCATION_TYPES = ["Home", "Work", "College", "Gym", "Other"];
 
 export function RlsTestPanel({ userId }: { userId: string }) {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);

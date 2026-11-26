@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "skills": {
+    "break": {
+      "source": "jakubkrehel/skills",
+      "commit": "672ae44ace6aaed65b86cbb1e2fd6fbea0e79578",
+      "sourceType": "github",
+      "skillPath": "skills/break/SKILL.md",
+      "computedHash": "041fe26ec8552f3e9114fd21a006a91cc82f30fb7561694ab12601c0a8b42cc9"
+    },
+    "emil-design-eng": {
+      "source": "emilkowalski/skills",
+      "commit": "64eb3deb9a5fbfa041faf783e0bc3fd635872e9c",
+      "sourceType": "github",
+      "skillPath": "skills/emil-design-eng/SKILL.md",
+      "computedHash": "e1b377ccde1d32743d1d3f7d8626629deb8055c9114d180c184697928cc66cc6"
+    },
+    "landing-page-design": {
+      "source": "2389-research/landing-page-design",
+      "commit": "b974b7cab48ab427839a790e997a3b5b2fdd732c",
+      "sourceType": "github",
+      "skillPath": "skills/SKILL.md",
+      "computedHash": "b37987edd0eb9ee93acec25fa9fe4a3474b8559ac5446d5bd7d3dc87254194c5"
+    },
+    "state-machine": {
+      "source": "jakubkrehel/skills",
+      "commit": "672ae44ace6aaed65b86cbb1e2fd6fbea0e79578",
+      "sourceType": "github",
+      "skillPath": "skills/state-machine/SKILL.md",
+      "computedHash": "36cc762e0b394918deb6785ece94a416996194f1c51df785ccea978fd6321625"
+    },
+    "variant": {
+      "source": "jakubkrehel/skills",
+      "commit": "672ae44ace6aaed65b86cbb1e2fd6fbea0e79578",
+      "sourceType": "github",
+      "skillPath": "skills/variant/SKILL.md",
+      "computedHash": "9e37b7199cbb585cf6019cd66ee4dfa4abcf5ce27948fe0ccdcc98ca3705fa38"
+    }
+  }
+}

@@ -26,7 +26,7 @@ export const LIFESTYLES = [
   "Other",
 ] as const;
 
-export const LOCATION_TYPES = ["Home", "Office", "College", "Other"] as const;
+export const LOCATION_TYPES = ["Home", "Work", "College", "Gym", "Other"] as const;
 
 export type Lifestyle = (typeof LIFESTYLES)[number];
 export type LocationType = (typeof LOCATION_TYPES)[number];

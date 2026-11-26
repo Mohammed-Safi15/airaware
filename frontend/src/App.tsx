@@ -68,6 +68,11 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/lifestyle" element={<Navigate to="/lifestyle" replace />} />
+            <Route path="/routines" element={<Navigate to="/routines" replace />} />
+            <Route path="/awareness" element={<Navigate to="/awareness" replace />} />
+            <Route path="/history" element={<Navigate to="/history" replace />} />
+            <Route path="/account" element={<Navigate to="/settings" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
