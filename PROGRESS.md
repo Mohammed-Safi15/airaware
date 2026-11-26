@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
-**Current Phase**: Phase 4 In Progress — 4.1/4.2/4.3 implementation complete, `npm run build` clean; awaiting Phase 4 Exit Gate
-**Exact Next Step**: (1) Run one-shot DB sections 6 & 8 of `worker/supabase_schema.sql` in the Supabase SQL editor (`lifestyle_profiles` table + RLS, `commute_routines`/`daily_routine_segments` column extensions). (2) Browser-verify Phase 4: Lifestyle Profiles CRUD + top-bar profile switcher, Routines page with "Check Routine AQI", and the Personal Exposure Score card on Dashboard + Routines. (3) After user confirms verification, commit all Phase 4 changes.
+**Current Phase**: Phase 5 In Progress — Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide, History & My Impact
+**Exact Next Step**: Phase 4 verified by user and committed (`6a518c4`). Build Phase 5: (1) `POST /api/advice` Worker endpoint (deterministic rules + `env.AI` hybrid with fallback) + advice card in Routines.tsx + auto-save check snapshots; (2) `Awareness.tsx` editorial guide page; (3) `HistoryImpact.tsx` + new Supabase tables for exposure check logs & protective actions. Verify `npx tsc --noEmit` in `worker/` and `npm run build` in `frontend/`, output the new SQL migration section, then stop at the Phase 5 Exit Gate.
 
 ---
 
@@ -90,7 +90,7 @@
 - [x] Dual NAQI + US EPA AQI returned from /api/aqi and displayed everywhere (Dashboard card + Saved Locations cards/drawers) ✅
 - [x] All changes committed locally (`a9cef79`); Phase 3 verified by user ✅
 
-### Phase 4: Multi-Profile, Routines & Exposure Score (In Progress)
+### [x] Phase 4: Multi-Profile, Routines & Exposure Score (Verified & Committed)
 Phase 4 spec (user-confirmed 2026-11-26), following the foggy nature & frosted glass design system in `DESIGN.md`:
 
 - [x] **4.1 — Multi-Profile Lifestyle Support (`lifestyle_profiles`)**
@@ -108,8 +108,10 @@ Phase 4 spec (user-confirmed 2026-11-26), following the foggy nature & frosted g
   - [x] Score card + segment breakdown displayed on Dashboard (single-stop model for viewed location) and Routines (full routine) pages
 - [x] Replace `/lifestyle` & `/routines` self-Navigate placeholder routes in `App.tsx` with the real pages (awareness/history nav links now fall through to the catch-all redirect; `ProfilesProvider` wired around all protected routes)
 - [x] `npm run build` in `frontend/` passes with zero TypeScript errors (`tsc -b` clean)
-- [ ] **⚠️ Manual DB step before verification**: Run the one-shot sections 6 & 8 of `worker/supabase_schema.sql` in the Supabase SQL editor (`lifestyle_profiles` table + RLS, plus the `commute_routines`/`daily_routine_segments` Phase 4 column extensions). These are `IF NOT EXISTS`/`ADD COLUMN IF NOT EXISTS` one-shot migrations, not part of the initial schema.
-- [ ] **Phase 4 Exit Gate**: Stop for user browser verification of multi-profile CRUD, routine AQI comparison, and Exposure Score calculation
+- [x] **⚠️ Manual DB step before verification**: Run the one-shot sections 6 & 8 of `worker/supabase_schema.sql` in the Supabase SQL editor (`lifestyle_profiles` table + RLS, plus the `commute_routines`/`daily_routine_segments` Phase 4 column extensions incl. `created_at`). These are `IF NOT EXISTS`/`ADD COLUMN IF NOT EXISTS` one-shot migrations, not part of the initial schema.
+- [x] Routines load-error safeguard: failed Supabase fetches surface a visible red alert with `error.message` instead of silently showing "No routines yet"
+- [x] All Phase 4 changes committed (`6a518c4`); Phase 4 verified by user ✅
+- [x] **Phase 4 Exit Gate**: Multi-profile CRUD, routine AQI comparison, and Exposure Score calculation verified in browser ✅
 
 Superseded checklist items (kept for traceability):
 - [ ] multi-profile `lifestyle_profiles` — multiple household/family profiles per login with age, lifestyle, health conditions, home base (rolled up into 4.1)
