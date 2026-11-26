@@ -137,3 +137,101 @@ export interface RoutineSegmentRow {
   latitude: number | null;
   longitude: number | null;
 }
+
+// ── Phase 5C — exposure check snapshots & protective actions ──────────────
+
+/** One stop's live NAQI/US AQI snapshot, persisted inside exposure_check_snapshots.stop_naqi_summary. */
+export interface StopNaqiSummary {
+  label: string;
+  naqi: number | null;
+  usAqi: number | null;
+  reliability: string | null;
+  hours: number;
+  environment_type: string;
+}
+
+/** A saved "Check Routine AQI" run (exposure_check_snapshots table). */
+export interface ExposureCheckSnapshotRow {
+  id: string;
+  user_id: string;
+  profile_id: string | null;
+  routine_id: string | null;
+  routine_name: string;
+  exposure_score: number;
+  total_dose: number;
+  stop_naqi_summary: StopNaqiSummary[];
+  created_at: string;
+}
+
+/** An environmental / protective action log entry (environmental_actions table). */
+export interface EnvironmentalActionRow {
+  id: string;
+  user_id: string;
+  profile_id: string | null;
+  action_type: string;
+  quantity: number;
+  estimated_co2_saved: number;
+  duration_hours: number | null;
+  frequency_days: number | null;
+  pm25_dose_avoided: number | null;
+  created_at: string;
+}
+
+/** Protective actions logged by the My Impact Calculator (Phase 5C). */
+export const PROTECTIVE_ACTIONS = [
+  "N95 Mask",
+  "HEPA Purifier",
+  "Rescheduled Outdoor Activity",
+  "Sealed Transit (Metro/AC)",
+] as const;
+export type ProtectiveAction = (typeof PROTECTIVE_ACTIONS)[number];
+
+/**
+ * Deterministic mitigation factors per protective action — the "post" state
+ * of the exposure engine's attenuation. N95 blocks ~25% of inhaled
+ * particles; a HEPA purifier cuts the indoor dose ~25%; rescheduling moves
+ * the day to zero exposure at that location; sealed Metro/AC transit halves
+ * the roadside plume compared with walking or a two-wheeler.
+ */
+export const PROTECTIVE_MITIGATION: Record<ProtectiveAction, number> = {
+  "N95 Mask": 0.25,
+  "HEPA Purifier": 0.25,
+  "Rescheduled Outdoor Activity": 1.0,
+  "Sealed Transit (Metro/AC)": 0.5,
+};
+
+/** Baseline (unmitigated) attenuation of the outdoor exposure being mitigated. */
+export const BASELINE_ATTENUATION = 0.95;
+
+/**
+ * Small reference footprints used for the "emissions saved" metric.
+ * HEPA: 50 W × grid intensity ~0.8 kg CO₂/kWh per hour of runtime.
+ * Sealed transit: ~0.2 kg CO₂ avoided per km vs. an equivalent car trip.
+ * N95: ~0.06 kg CO₂-eq manufacturing footprint per day of use.
+ */
+export const CO2_HOURLY: Partial<Record<ProtectiveAction, number>> = {
+  "HEPA Purifier": 0.04,
+  "Sealed Transit (Metro/AC)": 0.2,
+};
+export const CO2_PER_DAY: Partial<Record<ProtectiveAction, number>> = {
+  "N95 Mask": 0.06,
+};
+
+/** Persist a "Check Routine AQI" run as an exposure_check_snapshots row. */
+export async function saveExposureSnapshot(
+  user: { id: string },
+  input: {
+    profile_id: string | null;
+    routine_id: string;
+    routine_name: string;
+    exposure_score: number;
+    total_dose: number;
+    stop_naqi_summary: StopNaqiSummary[];
+  },
+): Promise<string | null> {
+  const { error } = await supabase.from("exposure_check_snapshots").insert({
+    user_id: user.id,
+    ...input,
+  });
+  return error ? error.message : null;
+}

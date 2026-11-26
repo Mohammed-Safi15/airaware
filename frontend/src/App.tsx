@@ -9,6 +9,7 @@ import { SettingsPage } from "./pages/Settings";
 import { LifestyleProfiles } from "./pages/LifestyleProfiles";
 import { RoutinesPage } from "./pages/Routines";
 import { AwarenessPage } from "./pages/Awareness";
+import { HistoryImpactPage } from "./pages/HistoryImpact";
 import { LoginPage } from "./pages/Login";
 import { ProfilesProvider } from "./lib/profileContext";
 
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/lifestyle" element={<LifestyleProfiles />} />
             <Route path="/routines" element={<RoutinesPage />} />
             <Route path="/awareness" element={<AwarenessPage />} />
+            <Route path="/history" element={<HistoryImpactPage />} />
             <Route path="/account" element={<Navigate to="/settings" replace />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>

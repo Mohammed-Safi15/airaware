@@ -8,6 +8,7 @@ import {
   ROUTINE_ENVIRONMENT_TYPES,
   TRANSIT_MODES,
   TRANSIT_MODE_LABELS,
+  saveExposureSnapshot,
   type RoutineRow,
   type RoutineSegmentRow,
   type RoutineStop,
@@ -264,6 +265,28 @@ export function RoutinesPage() {
     );
     setChecks((prev) => ({ ...prev, [id]: { result, at: Date.now() } }));
     setCheckingId(null);
+
+    // ── Phase 5C: auto-save this check as an exposure snapshot (History page) ──
+    // Fire-and-forget — a snapshot write failure must not block the check UI.
+    if (user) {
+      void saveExposureSnapshot(user, {
+        profile_id: activeProfile?.id ?? null,
+        routine_id: id,
+        routine_name: routine.name,
+        exposure_score: result.score,
+        total_dose: result.totalDose,
+        stop_naqi_summary: stops.map((s, i) => ({
+          label: s.label,
+          naqi: aqi[i]?._meta?.naqi ?? null,
+          usAqi: aqi[i]?._meta?.usAqi ?? null,
+          reliability: aqi[i]?.primary?.reliability ?? null,
+          hours: s.duration_minutes / 60,
+          environment_type: s.environment_type,
+        })),
+      }).then((err) => {
+        if (err) console.warn("Failed to save exposure snapshot:", err);
+      });
+    }
 
     // ── Hybrid advice card: POST /api/advice ─────────────────────────────────
     setAdviceState((prev) => ({
