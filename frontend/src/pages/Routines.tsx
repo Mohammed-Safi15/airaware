@@ -20,6 +20,7 @@ import {
   fetchStopAqi,
   type ExposureResult,
 } from "../lib/exposure";
+import type { AdviceOutcome } from "../lib/advice";
 import { Clock, MapPin, Pencil, Plus, Trash2, AlertCircle } from "lucide-react";
 
 /** One routine editor form — mirrors the Phase 4 commute_routines extension columns. */
@@ -90,6 +91,7 @@ export function RoutinesPage() {
   const [addLocationId, setAddLocationId] = useState("");
   const [picking, setPicking] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [adviceState, setAdviceState] = useState<Record<string, { status: "idle" | "loading" | "success" | "error"; outcome: AdviceOutcome | null; error: string | null }>>({});
 
   async function reload() {
     if (!user) return;
@@ -262,6 +264,63 @@ export function RoutinesPage() {
     );
     setChecks((prev) => ({ ...prev, [id]: { result, at: Date.now() } }));
     setCheckingId(null);
+
+    // ── Hybrid advice card: POST /api/advice ─────────────────────────────────
+    setAdviceState((prev) => ({
+      ...prev,
+      [id]: {
+        status: "loading",
+        outcome: null,
+        error: null,
+      },
+    }));
+
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8787/api";
+      const resp = await fetch(`${apiBase}/advice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: activeProfile
+            ? {
+                name: activeProfile.name,
+                age: activeProfile.age,
+                lifestyle: activeProfile.lifestyle,
+                health_conditions: activeProfile.health_conditions ?? [],
+                has_air_purifier: activeProfile.has_air_purifier,
+                uses_n95_mask: activeProfile.uses_n95_mask,
+                ventilates_windows: activeProfile.ventilates_windows,
+              }
+            : null,
+          stops: stops.map((s, i) => ({
+            label: s.label,
+            naqi: aqi[i]?._meta?.naqi ?? null,
+            usAqi: aqi[i]?._meta?.usAqi ?? null,
+            categoryLabel: s.environment_type,
+            hours: s.duration_minutes / 60,
+            environmentType: s.environment_type,
+          })),
+          exposureScore: result.score,
+          departureTime: routine.departure_time ?? null,
+          transitMode: routine.transit_mode ?? "walk",
+        }),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`advice API ${resp.status}: ${txt}`);
+      }
+      const outcome: AdviceOutcome = await resp.json();
+      setAdviceState((prev) => ({
+        ...prev,
+        [id]: { status: "success", outcome, error: null },
+      }));
+    } catch (err) {
+      setAdviceState((prev) => ({
+        ...prev,
+        [id]: { status: "error", outcome: null, error: err instanceof Error ? err.message : String(err) },
+      }));
+    }
   };
 
   // ── Stop editor helpers ───────────────────────────────────────────────────
@@ -381,6 +440,8 @@ export function RoutinesPage() {
         <div className="grid gap-5 xl:grid-cols-2">
           {routines.map((r) => {
             const check = checks[r.id];
+            const advice = adviceState[r.id];
+            const outcome = advice?.outcome;
             const stopList = segsToStops(segments[r.id] ?? [], savedLocations);
             const totalMins = stopList.reduce((sum, s) => sum + s.duration_minutes, 0);
             const allDays = r.active_days?.length === ACTIVE_DAYS.length;
@@ -566,6 +627,58 @@ export function RoutinesPage() {
                         </ul>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Hybrid Advice Card */}
+                {advice && (
+                  <div className="mt-5 rounded-2xl border border-white/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(30,46,36,0.06)] backdrop-blur-md">
+                    {advice.status === "loading" && (
+                      <div className="space-y-2" aria-busy="true">
+                        <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+                        <div className="h-3 w-full animate-pulse rounded bg-slate-200" />
+                        <div className="h-3 w-3/4 animate-pulse rounded bg-slate-200" />
+                      </div>
+                    )}
+                    {advice.status === "error" && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-red-500">Advice unavailable</p>
+                        <p className="mt-1 text-sm text-red-600">{advice.error}</p>
+                      </div>
+                    )}
+                    {advice.status === "success" && outcome && (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {outcome.source === "ai" ? "AI + Rules Advice" : "Rules Fallback Advice"}
+                          </p>
+                          {outcome.ai_error && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">degraded</span>
+                          )}
+                        </div>
+                        {outcome.summary && (
+                          <p className="mt-2 text-sm text-slate-700">{outcome.summary}</p>
+                        )}
+                        {outcome.tips.length > 0 && (
+                          <ul className="mt-3 space-y-2">
+                            {outcome.tips.map((tip, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-2 rounded-lg bg-[var(--color-deep-pine-soft)] px-3 py-2 text-xs text-[var(--color-deep-pine)]"
+                              >
+                                <span className="shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                  {tip.kind}
+                                </span>
+                                <span>{tip.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {outcome.ai_error && (
+                          <p className="mt-2 text-[11px] text-slate-400">AI layer degraded: {outcome.ai_error}</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>

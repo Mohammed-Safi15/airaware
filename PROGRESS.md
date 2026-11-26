@@ -1,7 +1,7 @@
 # AirAware - Progress Tracker
 
 **Current Phase**: Phase 5 In Progress — Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide, History & My Impact
-**Exact Next Step**: `POST /api/advice` Worker endpoint built (deterministic rules + `env.AI` llama-3.1-8b-instruct hybrid with fallback, `npx tsc --noEmit` clean in `worker/`, frontend build clean). Remaining Phase 5: (1) advice card in Routines.tsx calling `/api/advice` + auto-save check snapshots; (2) `Awareness.tsx` editorial guide page; (3) `HistoryImpact.tsx` + new Supabase tables for exposure check logs & protective actions. Then stop at the Phase 5 Exit Gate.
+**Exact Next Step**: History & My Impact Calculator page (`HistoryImpact.tsx`) + new Supabase tables for exposure check logs & protective actions. Then Phase 5 Exit Gate.
 
 ---
 
@@ -124,8 +124,8 @@ Superseded checklist items (kept for traceability):
   - [x] Cloudflare Workers AI layer (`env.AI`, `@cf/meta/llama-3.1-8b-instruct`, raw mode, 30s `Promise.race` timeout) that rephrases/contextualises the deterministic result; output schema-validated (strict JSON, kind whitelist, ≤4 tips) — any unbound/timeout/unparsable failure degrades to `source: "rules-fallback"` with `ai_error` set
   - [x] CORS extended to `GET, POST`; `wrangler.toml` already had `[ai] binding = "AI"`
   - [x] `npx tsc --noEmit` in `worker/` zero errors; `npm run build` in `frontend/` clean ✅
-- [ ] Advice card in Routines.tsx calling `/api/advice` + auto-save check snapshots
-- [ ] AQI Awareness & Health Guide page
+- [x] Advice card in Routines.tsx calling `/api/advice` + auto-save check snapshots ✅
+- [x] AQI Awareness & Health Guide page ✅
 - [ ] History & My Impact Calculator page
 - [ ] **Phase 5 Exit Gate**: Verify hybrid AI precautions and fallback robustness
 
