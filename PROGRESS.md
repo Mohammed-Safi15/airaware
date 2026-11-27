@@ -1,5 +1,7 @@
 ﻿# AirAware - Progress Tracker
 
+- [x] **Save Location modal focus fix** (`frontend/src/pages/Dashboard.tsx`): hoisted the `Field` form-label helper from inside the `Dashboard` component body to module scope — the nested definition gave it a new identity on every re-render, so each keystroke in the Location Name input remounted the modal subtree and dropped focus. Verified: `npm run build` zero errors; committed at `9e03390`
+
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
 **Current Phase**: Ask AirAware chat feature complete – `POST /api/chat` Worker endpoint (deterministic-first + Workers AI overlay with scope guardrails), new `AskAirAware.tsx` page as 7th `/ask` sidebar route (glass-panel, Playfair heading, 4 starter cards, session-only bubbles, loading dots, clear chat, responsive input), "Have a question? Ask AirAware →" CTA in Routines advice card; `npx tsc --noEmit` (worker) + `npm run build` (frontend) zero errors; committed

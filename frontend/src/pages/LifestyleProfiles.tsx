@@ -335,9 +335,11 @@ export function LifestyleProfiles() {
         const seq = pickSeq.current;
         setManualHome((prev) => ({ ...prev, latitude: String(lat), longitude: String(lng), name: "" }));
         setShowManualHome(true);
-        const name = await reverseGeocodeName(lat, lng);
+        // Fallback to "Current Location" so the GPS pick always yields a valid,
+        // non-empty name (the DB column is NOT NULL) even if Nominatim fails.
+        const name = (await reverseGeocodeName(lat, lng)) || "Current Location";
         if (seq === pickSeq.current) {
-          setManualHome((prev) => (name ? { ...prev, name: name } : prev));
+          setManualHome((prev) => ({ ...prev, name }));
         }
       },
       (err) => {
@@ -368,7 +370,7 @@ export function LifestyleProfiles() {
       latitude: lat,
       longitude: lng,
       location_type: manualHome.locationType,
-    });
+    }).select();
     setSavingHome(false);
     if (insertError || !data) {
       setGpsError(insertError ? `Could not save location: ${insertError.message}` : "Could not save location.");
