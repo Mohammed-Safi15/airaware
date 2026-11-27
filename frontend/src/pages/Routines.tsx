@@ -22,7 +22,7 @@ import {
   type ExposureBreakdownRow,
   type ExposureResult,
 } from "../lib/exposure";
-import { aqiBarColor, aqiPillStyle } from "../lib/aqiPill";
+import { naqiTier } from "../lib/naqiTiers";
 import type { AdviceOutcome } from "../lib/advice";
 import { Clock, MapPin, Pencil, Plus, Trash2, AlertCircle } from "lucide-react";
 
@@ -569,8 +569,7 @@ export function RoutinesPage() {
                             <div key={row.label} className="flex items-center justify-between gap-2 text-xs">
                               <span className="truncate text-slate-600">{row.label}</span>
                               <span
-                                className="shrink-0 rounded-full border border-transparent px-2 py-0.5 font-semibold"
-                                style={aqiPillStyle(row.naqiCategory?.color)}
+                                className={`shrink-0 rounded-full border px-2 py-0.5 font-semibold ${naqiTier(row.naqi).badge}`}
                               >
                                 NAQI {row.naqi}
                               </span>
@@ -603,11 +602,8 @@ export function RoutinesPage() {
                               </div>
                               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
                                 <div
-                                  className="h-full rounded-full"
-                                  style={{
-                                    width: `${Math.max(2, row.share * 100)}%`,
-                                    background: aqiBarColor(row.naqiCategory?.color),
-                                  }}
+                                  className={`h-full rounded-full ${naqiTier(row.naqi).fillClass}`}
+                                  style={{ width: `${Math.max(2, row.share * 100)}%` }}
                                 />
                               </div>
                             </div>

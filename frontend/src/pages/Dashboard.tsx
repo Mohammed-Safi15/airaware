@@ -6,6 +6,7 @@ import { supabase, LOCATION_TYPES } from "../lib/supabase";
 import { useAuth } from "../App";
 import { useProfiles } from "../lib/profileContext";
 import { computeExposure, toExposureStop } from "../lib/exposure";
+import { naqiTier } from "../lib/naqiTiers";
 import type { AQResponse, StationObservation } from "../types/aq";
 
 interface DashboardProps {}
@@ -255,14 +256,13 @@ export function Dashboard({ }: DashboardProps) {
                     {data.primary.attribution} · {data.primary.reliability}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div
-                    className="text-4xl font-bold"
-                    style={{ color: data._meta?.category?.color || "#64748b" }}
-                  >
+                <div
+                  className={`flex shrink-0 flex-col items-center rounded-xl border px-4 py-2 text-center ${naqiTier(data._meta?.naqi).badge}`}
+                >
+                  <div className="text-3xl font-bold leading-none">
                     {data._meta?.naqi ?? "-"}
                   </div>
-                  <p className="text-sm font-medium" style={{ color: data._meta?.category?.color }}>
+                  <p className="mt-1 text-sm font-medium">
                     {data._meta?.category?.label ?? "Unknown"}
                   </p>
                 </div>

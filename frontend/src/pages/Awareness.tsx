@@ -7,6 +7,7 @@
  */
 
 import { useEffect } from "react";
+import { NAQI_TIERS } from "../lib/naqiTiers";
 
 export function AwarenessPage() {
   useEffect(() => {
@@ -56,7 +57,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#16a34a" }}
+                    style={{ background: NAQI_TIERS[0].fillHex }}
                   ></div>
                 </td>
               </tr>
@@ -67,7 +68,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#ca8a04" }}
+                    style={{ background: NAQI_TIERS[1].fillHex }}
                   ></div>
                 </td>
               </tr>
@@ -78,7 +79,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#ea580c" }}
+                    style={{ background: NAQI_TIERS[2].fillHex }}
                   ></div>
                 </td>
               </tr>
@@ -89,7 +90,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#dc2626" }}
+                    style={{ background: NAQI_TIERS[3].fillHex }}
                   ></div>
                 </td>
               </tr>
@@ -100,7 +101,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#7c3aed" }}
+                    style={{ background: NAQI_TIERS[4].fillHex }}
                   ></div>
                 </td>
               </tr>
@@ -111,7 +112,7 @@ export function AwarenessPage() {
                 <td>
                   <div
                     className="w-8 h-2 rounded-full"
-                    style={{ background: "#7f1d1d" }}
+                    style={{ background: NAQI_TIERS[5].fillHex }}
                   ></div>
                 </td>
               </tr>
