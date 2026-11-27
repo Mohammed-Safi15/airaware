@@ -25,6 +25,19 @@ const emptyForm: FormState = {
   ventilatesWindows: false,
 };
 
+// Lifestyle options for Step 1
+const LIFESTYLE_OPTIONS = [
+  "Student",
+  "Office Commuter",
+  "Outdoor Worker",
+  "Homemaker",
+  "Senior",
+];
+
+// Step 2: Health Sensitivities + Protective Habits options
+const STEP2_HEALTH_OPTIONS = ["None", "Asthma", "Allergies", "Respiratory Sensitivity", "Cardiac Condition"];
+const STEP2_PROTECTIVE_OPTIONS = ["N95 Mask", "Indoor HEPA Purifier", "Window Ventilation"];
+
 function profileToForm(p: LifestyleProfileRow): FormState {
   return {
     name: p.name,
@@ -47,6 +60,17 @@ export function LifestyleProfiles() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Profile Builder Wizard ───────────────────────────────────────────
+  const [wizardStep, setWizardStep] = useState<number | null>(null);
+  const [wizardForm, setWizardForm] = useState({
+    name: "",
+    age: 25,
+    lifestyle: "Student",
+    healthConditions: [] as string[],
+    protectiveHabits: [] as string[],
+    homeLocationId: "",
+  });
 
   const { profiles } = useProfiles();
 
@@ -178,8 +202,189 @@ export function LifestyleProfiles() {
 
       {/* Profile cards */}
       {profiles.length === 0 ? (
+        // Initial Profile Builder Wizard — auto-present when user signs in with zero profiles
         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-          <p className="text-sm text-slate-600">No profiles yet. Add your first one above.</p>
+          <p className="text-sm text-slate-600">No profiles yet. Looks like this is your first time! Let's set up your profile.</p>
+          {wizardStep === null && (
+            <div className="mt-4">
+              <button
+                onClick={() => setWizardStep(1)}
+                className="rounded-lg bg-[var(--color-deep-pine)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+              >
+                Start Profile Builder
+              </button>
+            </div>
+          )}
+          {wizardStep === 1 && (
+            <div className="mt-4 space-y-4">
+              <h2 className="text-lg font-semibold text-slate-900">Step 1: Name & Age + Lifestyle</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Name *</span>
+                  <input
+                    value={wizardForm.name}
+                    onChange={(e) => setWizardForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    placeholder="e.g. Mohammed"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Age</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={wizardForm.age}
+                    onChange={(e) => setWizardForm((f) => ({ ...f, age: parseInt(e.target.value, 10) || 25 }))}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Lifestyle / Daily Role</span>
+                <select
+                  value={wizardForm.lifestyle}
+                  onChange={(e) => setWizardForm((f) => ({ ...f, lifestyle: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                >
+                  {LIFESTYLE_OPTIONS.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => setWizardStep(2)}
+                  className="rounded-lg bg-[var(--color-deep-pine)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                >
+                  Next →
+                </button>
+                <button
+                  onClick={() => setWizardStep(null)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          )}
+          {wizardStep === 2 && (
+            <div className="mt-4 space-y-4">
+              <h2 className="text-lg font-semibold text-slate-900">Step 2: Health Sensitivities & Protective Habits</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Health Conditions</span>
+                  <select
+                    value={wizardForm.healthConditions.join(", ")}
+                    onChange={(e) => setWizardForm((f) => ({ ...f, healthConditions: e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean) }))}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    multiple
+                    size={5}
+                  >
+                    {STEP2_HEALTH_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Protective Habits</span>
+                  <select
+                    value={wizardForm.protectiveHabits.join(", ")}
+                    onChange={(e) => setWizardForm((f) => ({ ...f, protectiveHabits: e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean) }))}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                    multiple
+                    size={5}
+                  >
+                    {STEP2_PROTECTIVE_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => setWizardStep(1)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={() => setWizardStep(3)}
+                  className="rounded-lg bg-[var(--color-deep-pine)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
+          {wizardStep === 3 && (
+            <div className="mt-4 space-y-4">
+              <h2 className="text-lg font-semibold text-slate-900">Step 3: Home Base (Optional)</h2>
+              <p className="text-sm text-slate-500">
+                Pick an existing saved location or skip this step.
+              </p>
+              <select
+                value={wizardForm.homeLocationId}
+                onChange={(e) => setWizardForm((f) => ({ ...f, homeLocationId: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              >
+                <option value="">— none —</option>
+                {savedLocations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.location_name} ({l.location_type})
+                  </option>
+                ))}
+              </select>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() => setWizardStep(2)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={async () => {
+                    // Save the profile with is_active: true
+                    const payload = {
+                      name: wizardForm.name.trim(),
+                      age: wizardForm.age,
+                      lifestyle: wizardForm.lifestyle,
+                      health_conditions: wizardForm.healthConditions,
+                      home_location_id: wizardForm.homeLocationId || null,
+                      has_air_purifier: wizardForm.protectiveHabits.includes("Indoor HEPA Purifier"),
+                      uses_n95_mask: wizardForm.protectiveHabits.includes("N95 Mask"),
+                      ventilates_windows: wizardForm.protectiveHabits.includes("Window Ventilation"),
+                      is_active: true,
+                      user_id: user!.id,
+                    };
+                    const { error } = await supabase.from("lifestyle_profiles").insert(payload);
+                    if (error) {
+                      setError(`Save failed: ${error.message}`);
+                    } else {
+                      await refreshProfiles();
+                      setWizardStep(null);
+                      setShowForm(false);
+                    }
+                  }}
+                  className="rounded-lg bg-[var(--color-deep-pine)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                >
+                  Finish & Save Profile
+                </button>
+                <button
+                  onClick={() => setWizardStep(2)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

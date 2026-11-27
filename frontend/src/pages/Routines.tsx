@@ -478,7 +478,9 @@ export function RoutinesPage() {
                 {/* Title + schedule */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">{r.name || "Untitled routine"}</h3>
+                    <h3 className="text-lg font-semibold text-slate-900" title={r.name || "Untitled routine"}>
+                    {r.name || "Untitled routine"}
+                  </h3>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                       <span>{TRANSIT_MODE_LABELS[r.transit_mode ?? "walk"]}</span>
                       <span className="flex items-center gap-1">
@@ -512,9 +514,9 @@ export function RoutinesPage() {
                   {stopList.map((s, i) => (
                     <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
                       <span className="flex items-center gap-1.5">
-                        <span className="font-mono text-slate-400">{i + 1}</span>
+                        <span title={s.label} className="font-mono text-slate-400">{i + 1}</span>
                         {s.label}
-                        <span className="text-slate-400">· {s.environment_type} · {totalDurationLabel(s.duration_minutes)}</span>
+                        <span title={s.label} className="text-slate-400 cursor-help">· {s.environment_type} · {totalDurationLabel(s.duration_minutes)}</span>
                       </span>
                     </li>
                   ))}

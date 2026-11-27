@@ -326,7 +326,9 @@ export function HistoryImpactPage() {
                 <li key={s.id} className="py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-[var(--color-deep-pine)]">{s.routine_name || "Routine check"}</p>
+                      <p className="truncate font-medium text-[var(--color-deep-pine)]" title={s.routine_name || "Routine check"}>
+                    {s.routine_name || "Routine check"}
+                  </p>
                       <p className="text-xs text-slate-500">{fmtTs(s.created_at)}</p>
                     </div>
                     <span

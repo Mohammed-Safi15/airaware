@@ -182,6 +182,7 @@ Superseded checklist items (kept for traceability):
 - [x] **Initial Profile Builder Wizard** post-signup: age, lifestyle, health conditions, home base selection
 - [x] **`emil-design-eng` motion polish**: component press/hover states, popover origins, tooltip timing, transitions vs keyframes
 - [x] State-machine / break edge-case checks (reduced motion, screen-size, auth state)
+- [x] **Title hover/tap attributes**: truncated stop-summary labels and routine names recoverable on phones/laptops
 - [x] **Phase 6 Exit Gate**: Verify polish, motion, and edge-case robustness
 
 ---
