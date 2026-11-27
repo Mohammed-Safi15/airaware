@@ -427,7 +427,7 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
         <button
           type="button"
           onClick={() => (showForm ? cancelForm() : setShowForm(true))}
-          className="flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+          className="press-soft flex items-center gap-2 rounded-lg bg-[var(--color-deep-pine)] px-3 py-2 text-sm font-medium text-[var(--color-sky-soft)] shadow-[0_2px_10px_rgb(30,46,36,0.18)] hover:bg-[var(--color-deep-pine-soft)] hover:text-white active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
           {showForm ? "Cancel" : "Add Location"}
@@ -534,7 +534,7 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
               <button
                 type="submit"
                 disabled={!canSave}
-                className="flex items-center gap-1 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="press-soft flex items-center gap-1 rounded-lg bg-[var(--color-deep-pine)] px-4 py-2 text-sm font-medium text-[var(--color-sky-soft)] hover:bg-[var(--color-deep-pine-soft)] hover:text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save className="h-4 w-4" /> {editingId ? "Update" : "Save"}
               </button>
@@ -556,14 +556,18 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((loc) => {
+          {filtered.map((loc, idx) => {
             const aqiData = aqis.get(loc.id) ?? null;
             const badge = getNAQIBadge(aqiData);
             const fetching = fetchingIds.has(loc.id);
             const isExpanded = expandedId === loc.id;
 
             return (
-              <div key={loc.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-sm">
+              <div
+                key={loc.id}
+                className="animate-card-rise overflow-hidden rounded-xl border border-slate-200 bg-white transition-shadow hover:shadow-sm"
+                style={{ animationDelay: `${Math.min(idx, 8) * 50}ms` }}
+              >
                 {/* Card row */}
                 <div className="flex items-center justify-between p-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -636,9 +640,10 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
                   </div>
                 </div>
 
-                {/* Expandable AQI drawer */}
-                {isExpanded && (
-                  <div className="space-y-3 border-t border-slate-100 bg-slate-50 px-3 py-3">
+                {/* Expandable AQI drawer — 0fr ↔ 1fr grid unfold */}
+                <div className={`acc-drawer grid ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+                  <div className="overflow-hidden">
+                    <div className="space-y-3 border-t border-slate-100 bg-slate-50 px-3 py-3">
                     {(() => {
                       const ad = aqiData;
                       if (!ad) {
@@ -747,8 +752,9 @@ export function SavedLocations({ userId, onLocationSelect, fetchAQI, defaultLat,
                         </div>
                       );
                     })()}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

@@ -83,6 +83,16 @@ export function Dashboard({ }: DashboardProps) {
     return computeExposure([stop], activeProfile, null, null);
   }, [activeProfile, data, locationName]);
 
+  // Cap the "Nearby Stations" list to the 10 closest alternatives so far
+  // stations (hundreds, 100s of km away) never clutter the Dashboard.
+  const nearbyStations = useMemo(
+    () =>
+      [...(data?.alternatives ?? [])]
+        .sort((a, b) => a.distance_km - b.distance_km)
+        .slice(0, 10),
+    [data]
+  );
+
   function handleSearchSelect(queryLat: number, queryLng: number, name: string) {
     void fetchAQI(queryLat, queryLng, name);
   }
@@ -347,12 +357,17 @@ export function Dashboard({ }: DashboardProps) {
             </div>
           )}
 
-          {/* Alternative Stations */}
-          {data.alternatives.length > 0 && (
+          {/* Alternative Stations — capped to the 10 nearest */}
+          {nearbyStations.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-medium text-slate-700">Nearby Stations ({data.alternatives.length})</h3>
+              <h3 className="text-sm font-medium text-slate-700">
+                Nearby Stations ({nearbyStations.length}
+                {data.alternatives.length > nearbyStations.length && (
+                  <span className="text-slate-400"> of {data.alternatives.length}</span>
+                )}
+                )</h3>
               <div className="mt-3 space-y-2">
-                {data.alternatives.map((alt: StationObservation) => (
+                {nearbyStations.map((alt: StationObservation) => (
                   <div key={alt.station_id} className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
                     <div>
                       <p className="text-sm font-medium text-slate-900">{alt.station_name}</p>

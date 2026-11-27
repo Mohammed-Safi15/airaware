@@ -7,9 +7,17 @@
   --color-misty-alabaster: #f4f6f3; /* page canvas */
   --color-sage-border: #e6ece7; /* subtle borders / dividers on light surfaces */
   --color-warm-dawn: #c89666; /* accent — brand italic, focus rings, small highlights */
+  /* Sky-blue & green nature layer (atmospheric backdrop + primary actions) */
+  --color-sky-soft: #d9eef8; /* atmospheric sky wash, top of the workspace gradient */
+  --color-sky-accent: #0ea5e9; /* interactive sky accent (focus rings, hover glows) */
+  --color-canopy-mist: #e6f2ec; /* forest canopy mist, gradient base over alabaster */
+  --color-pine-mist: #9fb4a8; /* muted pine-grey for secondary text on deep-pine surfaces */
 
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+  /* Emil Kowalski ease-out curve — the shared soft settle for entrances/unfolds */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -57,6 +65,14 @@ body {
   .animate-fade-in {
     animation: none;
   }
+  .animate-card-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .mist-layer {
+    animation: none;
+  }
 }
 
 /* Leaflet map fix for dark mode compatibility */
@@ -75,4 +91,44 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Card / panel entrance — transform + opacity only (GPU-composited), with a
+   per-item delay so staggered lists glide in one after another.
+   Opacity starts at 0 so the rise is visible; reduced motion pins it visible. */
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-card-rise {
+  animation: card-rise 0.45s var(--ease-soft) both;
+}
+
+/* Slow drifting mist layer for the atmospheric backdrop. GPU-composited
+   (transform only); disabled under prefers-reduced-motion. */
+@keyframes mist-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-80px); }
+}
+
+.mist-layer {
+  animation: mist-drift 46s linear infinite alternate;
+}
+
+/* Tactile press feedback (emil-design-eng): shared 240ms settle curve. */
+.press-soft {
+  transition: transform 0.24s var(--ease-soft), box-shadow 0.24s var(--ease-soft), background-color 0.24s var(--ease-soft), color 0.24s var(--ease-soft), border-color 0.24s var(--ease-soft);
+}
+
+/* Accordion drawer unfold — animates grid-template-rows 0fr ↔ 1fr so the
+   drawer glides open/closed without layout jumps (emil-design-eng). */
+.acc-drawer {
+  transition: grid-template-rows 0.32s var(--ease-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acc-drawer {
+    transition: none;
+  }
 }

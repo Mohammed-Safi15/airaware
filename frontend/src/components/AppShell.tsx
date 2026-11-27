@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useProfiles } from "../lib/profileContext";
+import { AtmosphericBackdrop } from "./AtmosphericBackdrop";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AppShellProps {
@@ -37,7 +38,7 @@ function bottomLinkClass(isActive: boolean) {
   return `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
     isActive
       ? "bg-[var(--color-deep-pine-soft)] text-[var(--color-warm-dawn)]"
-      : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+      : "text-[var(--color-pine-mist)] hover:bg-white/5 hover:text-[#F4F6F3]"
   }`;
 }
 
@@ -58,7 +59,11 @@ export function AppShell({ user, setUser }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-[var(--color-misty-alabaster)]">
+    <div className="flex min-h-screen overflow-x-hidden">
+      {/* Fixed scientific atmospheric backdrop — sky/canopy wash, contour
+          lines, altitude ticks, drifting mist. Non-interactive. */}
+      <AtmosphericBackdrop />
+
       {/* Mobile drawer — off-canvas below lg, full height with bottom-pinned Settings/Account/Sign Out */}
       {drawerOpen && (
         <div
@@ -68,7 +73,7 @@ export function AppShell({ user, setUser }: AppShellProps) {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[var(--color-deep-pine)] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-40 lg:w-64 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 shrink-0 flex-col overflow-y-auto border-r border-white/10 bg-[var(--color-deep-pine)] text-white transition-transform duration-300 ease-out lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:flex-col lg:justify-between lg:w-64 lg:translate-x-0 ${
           drawerOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -156,8 +161,8 @@ export function AppShell({ user, setUser }: AppShellProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="min-w-0 flex-1">
+      {/* Main Content — offset by the fixed lg sidebar */}
+      <main className="min-w-0 flex-1 lg:pl-64">
         {/* Mobile top bar — hamburger + brand, shown below lg */}
         <div className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--color-sage-border)] bg-[var(--color-deep-pine)] px-4 text-white lg:hidden">
           <button
