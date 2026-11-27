@@ -176,8 +176,6 @@ export function Dashboard({ }: DashboardProps) {
       <div className="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
         <Wind className="h-4 w-4 shrink-0 text-sky-500" />
         <span className="truncate font-medium" title={locationName}>{locationName}</span>
-        <span className="shrink-0 text-slate-400">·</span>
-        <span className="shrink-0 font-mono text-xs" title={`${lat.toFixed(4)}, ${lng.toFixed(4)}`}>{lat.toFixed(4)}, {lng.toFixed(4)}</span>
       </div>
 
       {/* Map */}

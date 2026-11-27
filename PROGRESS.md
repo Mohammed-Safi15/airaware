@@ -2,7 +2,7 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: Phase 6B complete – Profile Builder Wizard redesign (frosted-glass card, directional step transitions, toggle chips, GPS/manual/skip home-base + Profile Summary Card); `npm run build` zero TS errors; committed
+**Current Phase**: UI declutter pass complete – NAQI-only Routines display (US pill removed), high-contrast amber AQI badge, clean "Map Pinpoint" labels, decluttered exposure panels (Exposure Share + plain-English "Why This Score"), new Personal Exposure explainer on Awareness; `npm run build` zero TS errors; committed
 **Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log).
 
 ---
@@ -60,6 +60,18 @@ All checklist items verified:
 - [x] **Task 4 – Step 3 home base**: "Use My Current Location" GPS button porting the `SavedLocations.tsx` pattern (`inIndia` bounds, Nominatim reverse geocode with `user-agent=AirAware/1.0`, monotonic `pickSeq` counter); Manual Entry (name/lat/lng/type) with insert-if-new `saved_locations` "Home" row capturing the new id; saved-location select; Skip option; confirm inserts `lifestyle_profiles` with `home_location_id` + `is_active: true` and refreshes the profiles context; compact Profile Summary Card above "Confirm & Create Profile"
 - [x] `FormState`/`emptyForm` reconciled with `profileToForm`/`saveProfile`/add-edit panel (string `healthConditionsText` + 3 habit booleans); wizard keeps independent `WizardState` string arrays; unused imports removed
 - [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1655 modules, 3.22s)
+- [x] Committed
+
+---
+
+## UI Declutter Pass: NAQI-Only Routines Display + Personal Exposure Explainer (complete)
+
+- [x] **Dashboard location badge** (`frontend/src/pages/Dashboard.tsx`): removed the raw latitude/longitude readout above the map — badge now shows the clean city/place name only (e.g., `Bengaluru`)
+- [x] **Routines NAQI-only display** (`frontend/src/pages/Routines.tsx`): removed the `US xxx` pill entirely; each stop shows only its Indian NAQI (`NAQI 101`, `NAQI 74`); panel header relabeled "Per-stop NAQI"
+- [x] **High-contrast amber AQI badge** (new shared helper `frontend/src/lib/aqiPill.ts`): Satisfactory/Moderate amber-family colors (`#FFFF00`/`#FF9900` + DESIGN.md palette equivalents) now render as deep amber text `#713F12` (amber-950) on rich gold `#FDE047` (amber-200) with a crisp amber-400 border; other tiers keep the tinted category color; `aqiBarColor` keeps thin share-bar fills readable
+- [x] **Routines declutter** (`frontend/src/pages/Routines.tsx`): stripped raw `(lat, lng)` from map-pinpoint stop labels (now `Map Pinpoint`, both in routine segments and new pins); removed "Sensitivity ×…" multiplier from the score panel; replaced "Inhaled dose breakdown" with a clean **Exposure Share** section (stop name, duration, % share only, bar keeps NAQI-tier color); replaced "Why this score" with a plain-English summary (top contributing stop by share + tier, age/health sensitivity flag, mask/indoor/vehicle-cabin softening notes); dropped raw `Adult baseline: ×1.00` reason lines and the "Total inhaled dose X / budget 800" line; **Suggested Actions** kept unchanged
+- [x] **Awareness explainer** (`frontend/src/pages/Awareness.tsx`): new "How AirAware Calculates Your Personal Exposure" section — five-step plain-English breakdown (live NAQI → stop duration → indoor/outdoor setting → protective gear → personal sensitivity weighting) plus a short NAQI vs US EPA AQI note, styled in the existing frosted-card / Deep Pine pattern; engine math in `exposure.ts` untouched (PRD guardrails preserved)
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules, 3.27s)
 - [x] Committed
 
 ---

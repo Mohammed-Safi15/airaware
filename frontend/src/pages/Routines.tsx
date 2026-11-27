@@ -19,8 +19,10 @@ import {
   computeExposure,
   toExposureStop,
   fetchStopAqi,
+  type ExposureBreakdownRow,
   type ExposureResult,
 } from "../lib/exposure";
+import { aqiBarColor, aqiPillStyle } from "../lib/aqiPill";
 import type { AdviceOutcome } from "../lib/advice";
 import { Clock, MapPin, Pencil, Plus, Trash2, AlertCircle } from "lucide-react";
 
@@ -59,9 +61,7 @@ function segsToStops(segs: RoutineSegmentRow[], locs: SavedLocationRow[]): Routi
     const saved = s.location_id ? locs.find((l) => l.id === s.location_id) : null;
     return {
       location_id: s.location_id,
-      label: saved
-        ? saved.location_name
-        : `Pinpoint (${(s.latitude ?? 0).toFixed(4)}, ${(s.longitude ?? 0).toFixed(4)})`,
+      label: saved ? saved.location_name : "Map Pinpoint",
       latitude: s.latitude ?? saved?.latitude ?? null,
       longitude: s.longitude ?? saved?.longitude ?? null,
       environment_type: s.environment_type as RoutineStop["environment_type"],
@@ -384,7 +384,7 @@ export function RoutinesPage() {
           ...f.stops,
           {
             location_id: null,
-            label: `Pinpoint (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            label: "Map Pinpoint",
             latitude: lat,
             longitude: lng,
             environment_type: "Outdoor",
@@ -445,8 +445,8 @@ export function RoutinesPage() {
         </p>
         <p className="mt-1 text-sm text-slate-700">
           {activeProfile
-            ? `${activeProfile.name} — age ${activeProfile.age}, sensitivity weights applied automatically.`
-            : "No active lifestyle profile. Scores use the adult baseline (×1.00)."}
+            ? `${activeProfile.name} — age ${activeProfile.age}. Scores account for your age, health, and protective habits automatically.`
+            : "No active lifestyle profile — scores use a standard adult baseline."}
         </p>
       </div>
 
@@ -469,6 +469,13 @@ export function RoutinesPage() {
             const totalMins = stopList.reduce((sum, s) => sum + s.duration_minutes, 0);
             const allDays = r.active_days?.length === ACTIVE_DAYS.length;
             const checking = checkingId === r.id;
+            const topRow = check?.result.breakdown.reduce<ExposureBreakdownRow | null>(
+              (best, row) => (!best || row.share > best.share ? row : best),
+              null,
+            );
+            const softened = check?.result.breakdown.some(
+              (row) => row.mitigation < 1 || row.attenuation < 1,
+            );
 
             return (
               <div
@@ -549,38 +556,23 @@ export function RoutinesPage() {
                           </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-400">
-                          Sensitivity ×{check.result.sensitivity} · checked{" "}
-                          {new Date(check.at).toLocaleTimeString()}
+                          Checked {new Date(check.at).toLocaleTimeString()}
                         </p>
                       </div>
 
                       <div className="w-full rounded-xl border border-slate-100 bg-slate-50 p-3 sm:w-44">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                          Per-stop AQI
+                          Per-stop NAQI
                         </p>
                         <div className="mt-2 space-y-1.5">
                           {check.result.breakdown.map((row) => (
                             <div key={row.label} className="flex items-center justify-between gap-2 text-xs">
                               <span className="truncate text-slate-600">{row.label}</span>
-                              <span className="flex shrink-0 items-center gap-1">
-                                <span
-                                  className="rounded-full px-1.5 py-0.5 font-semibold"
-                                  style={{
-                                    background: row.naqiCategory?.color ? `${row.naqiCategory.color}22` : undefined,
-                                    color: row.naqiCategory?.color ?? "#64748b",
-                                  }}
-                                >
-                                  N {row.naqi}
-                                </span>
-                                <span
-                                  className="rounded-full px-1.5 py-0.5 font-semibold"
-                                  style={{
-                                    background: row.usAqiCategory?.color ? `${row.usAqiCategory.color}22` : undefined,
-                                    color: row.usAqiCategory?.color ?? "#64748b",
-                                  }}
-                                >
-                                  US {row.usAqi ?? "–"}
-                                </span>
+                              <span
+                                className="shrink-0 rounded-full border border-transparent px-2 py-0.5 font-semibold"
+                                style={aqiPillStyle(row.naqiCategory?.color)}
+                              >
+                                NAQI {row.naqi}
                               </span>
                             </div>
                           ))}
@@ -594,21 +586,19 @@ export function RoutinesPage() {
                       </div>
                     </div>
 
-                    {/* Dose breakdown */}
+                    {/* Exposure share */}
                     {check.result.breakdown.length > 0 && (
                       <div className="rounded-xl border border-slate-100 bg-white p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                          Inhaled dose breakdown
+                          Exposure share
                         </p>
                         <div className="mt-2 space-y-2">
                           {check.result.breakdown.map((row) => (
                             <div key={row.label}>
                               <div className="flex items-center justify-between text-xs text-slate-600">
-                                <span>
-                                  {row.label} · {row.hours}h · att ×{row.attenuation} · mit ×{row.mitigation}
-                                </span>
+                                <span className="truncate">{row.label} · {row.hours}h</span>
                                 <span className="font-mono text-slate-500">
-                                  {Math.round(row.dose)} dose · {Math.round(row.share * 100)}%
+                                  {Math.round(row.share * 100)}%
                                 </span>
                               </div>
                               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -616,7 +606,7 @@ export function RoutinesPage() {
                                   className="h-full rounded-full"
                                   style={{
                                     width: `${Math.max(2, row.share * 100)}%`,
-                                    background: row.naqiCategory?.color ?? "#15803d",
+                                    background: aqiBarColor(row.naqiCategory?.color),
                                   }}
                                 />
                               </div>
@@ -632,11 +622,36 @@ export function RoutinesPage() {
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                           Why this score
                         </p>
-                        <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                          {check.result.sensitivityReasons.map((reason) => (
-                            <li key={reason}>{reason}</li>
-                          ))}
-                          <li>Total inhaled dose {check.result.totalDose} / budget 800</li>
+                        <ul className="mt-2 space-y-1.5 text-xs text-slate-600">
+                          {topRow ? (
+                            <>
+                              <li>
+                                <span className="font-medium text-slate-800">{topRow.label}</span> drives
+                                most of your intake — about {Math.round(topRow.share * 100)}% of the total,
+                                at NAQI {topRow.naqi}
+                                {topRow.naqiCategory?.label ? ` (${topRow.naqiCategory.label})` : ""}.
+                              </li>
+                              {check.result.sensitivity > 1 && (
+                                <li>
+                                  Your profile's age or health conditions weigh in here, so the same air
+                                  affects you more than a standard adult.
+                                </li>
+                              )}
+                              {softened ? (
+                                <li>
+                                  Some of your stops already lower your intake — indoor spaces, sealed
+                                  vehicle cabins, a mask, or an air purifier are working in your favor.
+                                </li>
+                              ) : (
+                                <li>
+                                  Nothing is softening the intake yet — staying indoors, sealing the cabin,
+                                  or wearing an N95 would each bring your score down.
+                                </li>
+                              )}
+                            </>
+                          ) : (
+                            <li>No live readings for this routine's stops yet, so no exposure to weigh.</li>
+                          )}
                         </ul>
                       </div>
                       <div className="rounded-xl border border-slate-100 bg-white p-3">

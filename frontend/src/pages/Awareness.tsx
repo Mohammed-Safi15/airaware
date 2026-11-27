@@ -279,6 +279,82 @@ export function AwarenessPage() {
         </div>
       </section>
 
+      {/* ── How Personal Exposure Is Calculated ─────────────────── */}
+      <section className="mt-8">
+        <h2 className="text-2xl font-semibold text-[var(--color-deep-pine)] mb-4">
+          How AirAware Calculates Your Personal Exposure
+        </h2>
+        <p className="text-slate-600 mb-4">
+          A city's NAQI describes the air around a monitoring station — not the
+          air you actually breathe. AirAware turns each stop in your routine into
+          a personal estimate using five simple steps:
+        </p>
+
+        <div className="bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-5 shadow-[0_8px_30px_rgb(30,46,36,0.06)]">
+          <ol className="space-y-3 text-sm text-slate-600">
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1E2E24] text-xs font-semibold text-white">1</span>
+              <span>
+                <strong className="text-slate-900">Read the live NAQI</strong> at each stop. If a stop
+                has no nearby reading, AirAware marks it unavailable instead of
+                guessing with zeros.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1E2E24] text-xs font-semibold text-white">2</span>
+              <span>
+                <strong className="text-slate-900">Multiply by time.</strong> A longer stop means more
+                inhaled air — a 30-minute walk contributes far less than a
+                full workday at the same NAQI.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1E2E24] text-xs font-semibold text-white">3</span>
+              <span>
+                <strong className="text-slate-900">Adjust for setting.</strong> Indoors or in a sealed
+                vehicle cabin, you inhale less outdoor particle than outdoors —
+                AirAware lowers the dose accordingly.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1E2E24] text-xs font-semibold text-white">4</span>
+              <span>
+                <strong className="text-slate-900">Account for protection.</strong> Wearing an N95 or
+                keeping a purifier running cuts the particles that actually reach
+                your lungs.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1E2E24] text-xs font-semibold text-white">5</span>
+              <span>
+                <strong className="text-slate-900">Weight for you.</strong> Your age, health
+                conditions, and activity level scale the total — the same air
+                matters more for a child with asthma than for a healthy adult.
+              </span>
+            </li>
+          </ol>
+          <p className="mt-4 text-xs text-slate-500">
+            The result is a 0–100 personal exposure score: how hard the day's
+            air is on <em>you</em>, across all stops, not just a snapshot of
+            one street.
+          </p>
+        </div>
+
+        {/* NAQI vs US EPA callout */}
+        <div className="mt-4 bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-5 shadow-[0_4px_12px_rgb(30,46,36,0.05)]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            NAQI vs US EPA AQI — a quick note
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            AirAware displays the Indian <strong>NAQI</strong> (0–500 scale, CPCB
+            tiers) as its primary number. The US EPA AQI is a separate index
+            for the same air: it uses different breakpoints, pollutant
+            weightings, and monitoring conventions, so the two don't always
+            agree on a given day.
+          </p>
+        </div>
+      </section>
+
       {/* ── Why Cumulative Daily Exposure Matters ───────────────────── */}
       <section className="mt-8">
         <h2 className="text-2xl font-semibold text-[var(--color-deep-pine)] mb-4">
