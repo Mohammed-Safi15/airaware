@@ -1,15 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 type Mode = "signin" | "signup";
 
+/** Frosted-glass auth form (sky-blue & pine system) used by Login.tsx. */
 export function AuthPanel() {
-  const [mode, setMode] = useState<Mode>("signin");
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<Mode>(
+    searchParams.get("mode") === "signup" ? "signup" : "signin"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Deep-link (?mode=signup) keeps working even after a remount.
+  useEffect(() => {
+    if (searchParams.get("mode") === "signup") setMode("signup");
+  }, [searchParams]);
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError(null);
+    setNotice(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,40 +58,36 @@ export function AuthPanel() {
     setNotice(mode === "signup" ? "Account created and signed in." : "Signed in.");
   }
 
+  const inputClass =
+    "w-full rounded-xl border border-[var(--color-sage-border)] bg-white/80 px-3.5 py-2.5 text-sm text-[var(--color-deep-pine)] outline-none transition-colors focus:border-[var(--color-sky-accent)] focus:ring-2 focus:ring-[var(--color-sky-soft)]";
+
   return (
-    <section className="mx-auto w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex gap-1 rounded-lg bg-slate-100 p-1">
-        <button
-          type="button"
-          onClick={() => {
-            setMode("signin");
-            setError(null);
-            setNotice(null);
-          }}
-          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            mode === "signin" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          Log in
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("signup");
-            setError(null);
-            setNotice(null);
-          }}
-          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            mode === "signup" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-          }`}
-        >
-          Sign up
-        </button>
+    <section className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-[0_8px_30px_rgb(30,46,36,0.08)] backdrop-blur-md sm:p-7">
+      {/* Mode tabs */}
+      <div className="mb-5 flex gap-1 rounded-xl border border-[var(--color-sage-border)] bg-[var(--color-misty-alabaster)] p-1">
+        {(["signin", "signup"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => switchMode(m)}
+            aria-pressed={mode === m}
+            className={`press-soft active:scale-[0.98] flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+              mode === m
+                ? "bg-[var(--color-deep-pine)] text-[var(--color-misty-alabaster)] shadow-sm"
+                : "text-slate-500 hover:text-[var(--color-deep-pine)]"
+            }`}
+          >
+            {m === "signin" ? "Log In" : "Sign Up"}
+          </button>
+        ))}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="email"
+            className="mb-1.5 block text-sm font-medium text-[var(--color-deep-pine)]"
+          >
             Email
           </label>
           <input
@@ -85,12 +97,16 @@ export function AuthPanel() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            placeholder="you@example.com"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="password"
+            className="mb-1.5 block text-sm font-medium text-[var(--color-deep-pine)]"
+          >
             Password
           </label>
           <input
@@ -101,20 +117,29 @@ export function AuthPanel() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            placeholder={mode === "signup" ? "At least 6 characters" : "••••••"}
+            className={inputClass}
           />
           {mode === "signup" && (
-            <p className="mt-1 text-xs text-slate-500">Minimum 6 characters.</p>
+            <p className="mt-1.5 text-xs text-slate-500">
+              Minimum 6 characters.
+            </p>
           )}
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            role="alert"
+            className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
+          >
             {error}
           </p>
         )}
         {notice && (
-          <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p
+            role="status"
+            className="rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm text-emerald-700"
+          >
             {notice}
           </p>
         )}
@@ -122,9 +147,13 @@ export function AuthPanel() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-sky-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="press-soft active:scale-[0.98] w-full rounded-xl bg-[var(--color-deep-pine)] px-4 py-2.5 text-sm font-semibold text-[var(--color-misty-alabaster)] shadow-[0_8px_30px_rgb(30,46,36,0.18)] hover:bg-[var(--color-deep-pine-soft)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? "Working…" : mode === "signin" ? "Log in" : "Create account"}
+          {busy
+            ? "Working…"
+            : mode === "signin"
+              ? "Log In"
+              : "Create account & start"}
         </button>
       </form>
     </section>

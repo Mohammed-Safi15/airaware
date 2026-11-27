@@ -2,7 +2,7 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: Phase 5 Exit Gate complete – all checklist items verified; stopping at Phase 5 gate, do not start Phase 6
+**Current Phase**: Phase 6A complete – Public Homepage + aligned Login/Sign Up views; `npm run build` zero TS errors; committed
 **Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log).
 
 ---
@@ -29,6 +29,26 @@ All checklist items verified:
 - [x] Task 3: Smooth accordion drawer unfolds (0fr ↔ 1fr transition with rotating chevron) in `SavedLocations.tsx`; staggered GPU-composited card entrances (`animate-card-rise`) with 30–80ms delays; smooth advice reveals in `Routines.tsx`; tactile active-press feedback (`press-soft`, `active:scale-[0.98]`)
 - [x] `npm run build` passes in `frontend/` (7.27s, 1653 modules transformed, zero TypeScript errors)
 - [x] DESIGN.md updated with four new atmospheric color tokens (Sky Soft, Sky Accent, Canopy Mist, Pine Mist) and motion/interaction token documentation
+
+---
+
+## Phase 6A: Public Landing Homepage + Login/Sign Up Design Alignment (complete)
+
+- [x] **Task 1 – Public Landing Homepage** (`frontend/src/pages/Home.tsx` + `frontend/src/components/FoggyBackdrop.tsx`):
+  - [x] Route `/` renders `Home.tsx` for unauthenticated visitors; signed-in users auto-redirect to `/dashboard` (App.tsx)
+  - [x] Foggy nature hero — `FoggyBackdrop` (fixed, `pointer-events-none`/`aria-hidden`, sky-soft → alabaster → canopy-mist gradient, layered Deep Pine mountain/canopy silhouettes, two `.mist-layer` drifting fog blobs, `prefers-reduced-motion`-guarded)
+  - [x] Editorial `Playfair Display` headline with Warm Dawn italic accent ("Know the air you *actually* breathe."), plain-English AirAware intro (hyperlocal NAQI + US AQI station mapping, multi-profile exposure scoring, hybrid AI routine tips)
+  - [x] Prominent **Get Started (Sign Up)** (Deep Pine pill) + **Log In** (frosted pill) CTAs with `press-soft` / `active:scale-[0.98]`
+  - [x] Three frosted-glass feature cards below the fold (`animate-card-rise` staggered 0/60/120ms): Hyperlocal India AQI · Family & Lifestyle Profiles · Routine Exposure & AI Tips
+  - [x] Clean footer (brand + data-source line + CTA link)
+  - [x] Responsive: stacked hero/CTAs/cards on phone (360–412px), 3-up card grid + split-card auth on laptop (1280–1440px)
+- [x] **Task 2 – Login / Sign Up Alignment** (`frontend/src/pages/Login.tsx` + `frontend/src/components/AuthPanel.tsx`):
+  - [x] Frosted-glass split card over the sky-to-canopy `FoggyBackdrop`: left Deep Pine brand pane (headline + 3 feature bullets, hidden on phones → compact header), right pane with Log In / Sign Up mode tabs
+  - [x] Sign-in + sign-up modes with `?mode=signup` deep-link from the homepage CTA; error/notice states; "Back to home" pill linking to `/`
+  - [x] Auth transitions cleanly: `onAuthStateChange` flips user state → route guard bounces to `/dashboard`
+  - [x] All styling migrated from slate defaults to the sky-blue & pine token set (Deep Pine buttons, sage borders, sky-soft focus rings, Warm Dawn accents)
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1655 modules, 2.75s)
+- [x] Committed
 
 ---
 

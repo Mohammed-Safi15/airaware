@@ -1,51 +1,107 @@
+import { Link } from "react-router-dom";
+import { ArrowLeft, Wind, Gauge, Users, Leaf } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { AuthPanel } from "../components/AuthPanel";
+import { FoggyBackdrop } from "../components/FoggyBackdrop";
 
 interface LoginPageProps {
-  onLogin: (user: import("@supabase/supabase-js").User) => void;
+  onLogin: (user: User) => void;
 }
 
+/**
+ * Log In / Sign Up — frosted-glass split card over the sky-to-canopy
+ * foggy backdrop. Left pane: brand + feature highlights. Right pane:
+ * the auth form. On phones the brand pane collapses to a compact header.
+ */
 export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 mb-4">
-            <svg className="w-8 h-8 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">AirAware</h1>
-          <p className="mt-2 text-sm text-slate-500">Track air quality. Stay informed. Breathe easier.</p>
-        </div>
+    <div className="relative flex min-h-dvh min-h-screen flex-col">
+      <FoggyBackdrop />
 
-        {/* Auth Panel */}
-        <AuthPanel />
-
-        {/* Feature Preview */}
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-medium text-slate-900 mb-3">What you'll get:</h2>
-          <ul className="space-y-2 text-sm text-slate-600">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-              Real-time AQI data from CPCB & OpenAQ
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-sky-500 shrink-0" />
-              Interactive map with station markers
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-              Save and manage favorite locations
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 h-2 w-2 rounded-full bg-purple-500 shrink-0" />
-              Personalized health recommendations
-            </li>
-          </ul>
-        </div>
+      {/* Back to home */}
+      <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pt-5 sm:px-8 sm:pt-7">
+        <Link
+          to="/"
+          className="press-soft active:scale-[0.98] inline-flex items-center gap-1.5 rounded-full border border-[var(--color-sage-border)] bg-white/70 px-3.5 py-2 text-xs font-semibold text-[var(--color-deep-pine)] backdrop-blur-md hover:bg-white"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to home
+        </Link>
       </div>
+
+      {/* Split card */}
+      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-6 sm:px-8 sm:py-8">
+        <div className="animate-card-rise grid w-full grid-cols-1 overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-[0_8px_30px_rgb(30,46,36,0.08)] backdrop-blur-md lg:grid-cols-[1.05fr_1fr]">
+          {/* Brand pane — hidden on phones, compact header there */}
+          <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--color-deep-pine)] to-[var(--color-deep-pine-soft)] p-8 text-[var(--color-misty-alabaster)] lg:flex lg:p-10">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+                  <Wind className="h-[18px] w-[18px] text-[var(--color-warm-dawn)]" />
+                </span>
+                <span className="font-display text-xl font-bold">AirAware</span>
+              </div>
+              <h1 className="mt-8 font-display text-3xl leading-snug font-bold">
+                Air that <em className="text-[var(--color-warm-dawn)] italic">knows</em>{" "}
+                your routine.
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-pine-mist)]">
+                Hyperlocal Indian NAQI + US AQI, multi-profile household
+                exposure scoring, and hybrid AI routine tips — all in one calm
+                place.
+              </p>
+            </div>
+
+            <ul className="mt-10 space-y-3">
+              {[
+                { icon: Gauge, text: "Live CPCB & OpenAQ stations, mapped to your street" },
+                { icon: Users, text: "Self, child & senior-parent exposure profiles" },
+                { icon: Leaf, text: "Daily 0–100 exposure score with plain-English tips" },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3 text-sm text-[var(--color-misty-alabaster)]">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                    <Icon className="h-4 w-4 text-[var(--color-sky-accent)]" />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </aside>
+
+          {/* Form pane */}
+          <section className="flex flex-col p-6 sm:p-8">
+            {/* Mobile brand header (pane is hidden on phones) */}
+            <div className="mb-6 flex items-center gap-2.5 lg:hidden">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-deep-pine)]">
+                <Wind className="h-[18px] w-[18px] text-[var(--color-warm-dawn)]" />
+              </span>
+              <div>
+                <h1 className="font-display text-lg leading-tight font-bold text-[var(--color-deep-pine)]">
+                  AirAware
+                </h1>
+                <p className="text-xs text-slate-500">Breathe informed.</p>
+              </div>
+            </div>
+
+            <h2 className="mb-4 text-center font-display text-2xl font-bold text-[var(--color-deep-pine)] lg:text-left">
+              Welcome back
+            </h2>
+            <AuthPanel />
+
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500">
+              Signing in routes you straight to your dashboard. New accounts
+              land on the profile-builder setup.
+            </p>
+          </section>
+        </div>
+      </main>
+
+      {/* Sign-out safety net — if the app re-hydrates a session while this
+          page is open, onAuthStateChange in App.tsx flips user state and
+          the route guard bounces the visitor to /dashboard. */}
+      <footer className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-5 text-center text-[11px] text-slate-400 sm:px-8 sm:pb-6">
+        Data sourced from CPCB &amp; OpenAQ — your readings stay private to your account.
+      </footer>
     </div>
   );
 }
