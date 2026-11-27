@@ -65,11 +65,11 @@ function StopChip({
 
 export function Home() {
   return (
-    <div className="relative min-h-screen">
+    <div className="relative flex min-h-dvh flex-col justify-between">
       <FoggyBackdrop />
 
       {/* ── Top bar — brand only (CTAs live once, in the hero) ───── */}
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center px-5 py-5 sm:px-8">
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center px-5 py-4 sm:px-8 lg:py-3">
         <div className="flex items-center gap-2">
           <span className="glass-panel flex h-9 w-9 items-center justify-center rounded-full">
             <Wind className="h-[18px] w-[18px] text-[var(--color-deep-pine)]" />
@@ -81,7 +81,7 @@ export function Home() {
       </header>
 
       {/* ── Instant-Clarity split hero ───────────────────────────── */}
-      <main className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-5 pb-20 pt-8 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
+      <main className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-8 px-5 pb-6 pt-6 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-3 lg:pt-3">
         {/* Left — message + CTAs */}
         <div className="text-center lg:text-left">
           <span className="glass-panel inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-deep-pine)]">
@@ -89,7 +89,7 @@ export function Home() {
             Hyperlocal Indian AQI · Personal Exposure
           </span>
 
-          <h1 className="mt-5 font-display text-4xl leading-[1.08] font-bold text-[var(--color-deep-pine)] sm:text-5xl xl:text-6xl">
+          <h1 className="mt-4 font-display text-4xl leading-[1.08] font-bold text-[var(--color-deep-pine)] sm:text-5xl 2xl:text-6xl">
             Know the air you{" "}
             <em className="text-[var(--color-warm-dawn)] italic">
               actually
@@ -97,13 +97,13 @@ export function Home() {
             breathe.
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg lg:mx-0">
+          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg lg:mx-0">
             AirAware maps live Indian air-quality stations to your
             neighbourhood and scores the exposure of everyone at home — then
             turns your daily routine into plain-English tips.
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
+          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row lg:justify-start lg:mt-6">
             <Link
               to="/login?mode=signup"
               className="press-soft active:scale-[0.98] inline-flex items-center gap-2 rounded-full bg-[var(--color-deep-pine)] px-7 py-3.5 text-sm font-semibold text-[var(--color-misty-alabaster)] shadow-[0_8px_30px_rgb(30,46,36,0.18)] hover:bg-[var(--color-deep-pine-soft)]"
@@ -127,7 +127,10 @@ export function Home() {
             className="animate-card-rise lg:-rotate-[1.2deg]"
             style={{ animationDelay: "60ms" }}
           >
-            <article className="glass-panel press-soft rounded-2xl p-5 hover:-translate-y-1">
+            <article
+              className="float-slow card-lift glass-panel rounded-2xl p-5"
+              style={{ animationDelay: "0s" }}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -159,7 +162,10 @@ export function Home() {
             className="animate-card-rise lg:ml-6 lg:rotate-[0.8deg]"
             style={{ animationDelay: "140ms" }}
           >
-            <article className="glass-panel press-soft rounded-2xl p-5 hover:-translate-y-1">
+            <article
+              className="float-slow card-lift glass-panel rounded-2xl p-5"
+              style={{ animationDelay: "1.2s" }}
+            >
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-deep-pine)] font-display text-sm font-bold text-[var(--color-misty-alabaster)]">
                   A
@@ -189,7 +195,10 @@ export function Home() {
             className="animate-card-rise lg:ml-12 lg:-rotate-[0.6deg]"
             style={{ animationDelay: "220ms" }}
           >
-            <article className="glass-panel press-soft rounded-2xl p-5 hover:-translate-y-1">
+            <article
+              className="float-slow card-lift glass-panel rounded-2xl p-5"
+              style={{ animationDelay: "2.4s" }}
+            >
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Today's routine
               </p>
@@ -214,15 +223,15 @@ export function Home() {
       </main>
 
       {/* ── Feature cards (below the fold) ───────────────────────── */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-20 sm:px-8">
-        <h2 className="mb-6 text-center font-display text-lg font-bold text-[var(--color-deep-pine)]/70 lg:text-left">
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-4 sm:px-8 lg:pb-6">
+        <h2 className="mb-4 inline-flex items-center px-3.5 py-1 rounded-full bg-white/85 backdrop-blur-md border border-white/90 text-[#1E2E24] font-semibold shadow-sm">
           Why AirAware
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
           {FEATURES.map(({ icon: Icon, num, title, body, delay }) => (
             <article
               key={title}
-              className="glass-panel animate-card-rise press-soft relative rounded-2xl p-5 hover:-translate-y-1.5 sm:p-6"
+              className="card-lift glass-panel animate-card-rise relative rounded-2xl p-5 sm:p-6"
               style={{ animationDelay: delay }}
             >
               <div className="flex items-start justify-between">
@@ -249,15 +258,15 @@ export function Home() {
 
       {/* ── Minimal footer ───────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-[var(--color-sage-border)]">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-1.5 px-5 py-6 text-center sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-1.5 px-5 py-4 text-center sm:px-8 lg:py-3">
           <div className="flex items-center gap-2 font-display text-sm font-bold text-[var(--color-deep-pine)]">
             <Wind className="h-4 w-4 text-[var(--color-warm-dawn)]" />
             AirAware
           </div>
-          <p className="text-[11px] leading-relaxed text-slate-500">
+          <span className="inline-flex rounded-full bg-white/75 px-4 py-1.5 text-[11px] font-medium leading-relaxed text-[#1E2E24] shadow-sm backdrop-blur-md">
             Data: CPCB · OpenAQ · Open-Meteo — built for India's air, for
             everyone's lungs.
-          </p>
+          </span>
         </div>
       </footer>
     </div>

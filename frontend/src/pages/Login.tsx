@@ -8,79 +8,6 @@ interface LoginPageProps {
   onLogin: (user: User) => void;
 }
 
-type Pt = readonly [number, number];
-
-/** Point on a quadratic Bézier at parameter t. */
-function qPoint(
-  p0: Pt,
-  c: Pt,
-  p1: Pt,
-  t: number,
-): [number, number] {
-  const u = 1 - t;
-  return [
-    u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0],
-    u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1],
-  ];
-}
-
-/* Botanical frond silhouettes for the deep-pine brand pane — a small
-   sculpted cluster that sits behind the frosted glass and under the
-   paper-cut wave edge. GPU-cheap static SVG with a soft drop shadow. */
-const FROND_STEMS: readonly {
-  p0: Pt;
-  c: Pt;
-  p1: Pt;
-  color: string;
-  width: number;
-  opacity: number;
-}[] = [
-  { p0: [20, 172], c: [80, 90], p1: [212, 64], color: "#9fb4a8", width: 5, opacity: 0.55 },
-  { p0: [44, 172], c: [112, 108], p1: [232, 92], color: "#52796f", width: 4, opacity: 0.5 },
-  { p0: [66, 172], c: [142, 130], p1: [252, 128], color: "#9fb4a8", width: 3, opacity: 0.38 },
-];
-
-function FrondSilhouette() {
-  return (
-    <svg
-      className="pointer-events-none absolute -bottom-8 -left-6 h-44 w-72"
-      viewBox="0 0 280 180"
-      fill="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <filter id="frond-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="-4" stdDeviation="8" floodColor="#0f1a14" floodOpacity="0.4" />
-        </filter>
-      </defs>
-      <g filter="url(#frond-shadow)">
-        {FROND_STEMS.map((s, si) => (
-          <g key={si}>
-            <path
-              d={`M${s.p0[0]} ${s.p0[1]} Q ${s.c[0]} ${s.c[1]} ${s.p1[0]} ${s.p1[1]}`}
-              stroke={s.color}
-              strokeWidth={s.width}
-              strokeLinecap="round"
-              opacity={s.opacity}
-            />
-            {Array.from({ length: 7 }, (_, i) => {
-              const t = 0.18 + i * 0.13;
-              const [x, y] = qPoint(s.p0, s.c, s.p1, t);
-              const len = 20 * (1 - t * 0.55);
-              return (
-                <g key={i} stroke={s.color} strokeWidth="2.5" strokeLinecap="round" opacity={s.opacity * 0.9}>
-                  <path d={`M${x} ${y} l ${len * 0.55} ${-len * 0.75}`} />
-                  <path d={`M${x} ${y} l ${len * 0.4} ${len * 0.6}`} />
-                </g>
-              );
-            })}
-          </g>
-        ))}
-      </g>
-    </svg>
-  );
-}
-
 /**
  * Log In / Sign Up — frosted-glass card over the botanical foggy
  * backdrop. Desktop: split card with a sculpted paper-cut wave edge
@@ -118,8 +45,8 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                   "radial-gradient(closest-side, rgba(56, 189, 248, 0.35), transparent 70%)",
               }}
             />
-            {/* Rich shadowed botanical fronds */}
-            <FrondSilhouette />
+            {/* Rich sky glow keeps the deep-pine pane atmospheric; the full
+                botanical backdrop lives in FoggyBackdrop behind the card */}
 
             <div className="relative pr-2">
               <div className="flex items-center gap-2.5">
@@ -139,13 +66,13 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
               </p>
             </div>
 
-            <ul className="relative mt-10 space-y-3 pr-2">
+            <ul className="relative mt-10 space-y-4 pr-2">
               {[
                 { icon: Gauge, text: "Live CPCB & OpenAQ stations, mapped to your street" },
                 { icon: Users, text: "Self, child & senior-parent exposure profiles" },
                 { icon: Leaf, text: "Daily 0–100 exposure score with plain-English tips" },
               ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-sm text-[var(--color-misty-alabaster)]">
+                <li key={text} className="flex items-start gap-3 text-[14.5px] leading-relaxed text-[#F2F7F4]">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
                     <Icon className="h-4 w-4 text-[var(--color-sky-accent)]" />
                   </span>
@@ -196,20 +123,15 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
             </h2>
             <AuthPanel />
 
-            <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500 lg:text-left">
-              Signing in routes you straight to your dashboard. New accounts
-              land on the profile-builder setup.
-            </p>
+            <div className="mt-5 flex justify-center lg:justify-start">
+              <span className="inline-flex items-center rounded-full bg-white/75 px-4 py-1.5 text-[11px] font-medium leading-relaxed text-[#1E2E24] shadow-sm backdrop-blur-md">
+                Signing in routes you straight to your dashboard. New
+                accounts land on the profile-builder setup.
+              </span>
+            </div>
           </section>
         </div>
       </main>
-
-      {/* Sign-out safety net — if the app re-hydrates a session while this
-          page is open, onAuthStateChange in App.tsx flips user state and
-          the route guard bounces the visitor to /dashboard. */}
-      <footer className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-5 text-center text-[11px] text-slate-400 sm:px-8 sm:pb-6">
-        Data sourced from CPCB &amp; OpenAQ — your readings stay private to your account.
-      </footer>
     </div>
   );
 }

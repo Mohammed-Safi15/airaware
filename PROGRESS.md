@@ -2,8 +2,32 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: Frosted-glass + botanical UI upgrade pass complete – signature `.glass-panel` / `.glass-panel-solid` material, botanical foliage & paper-cut wave backdrops (Home + Login), enriched scientific `AtmosphericBackdrop`, split-hero landing with staggered glass preview cards, paper-cut wave Login split card; `npm run build` zero TS errors; committed
-**Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log).
+**Current Phase**: Home polish pass complete – un-clipped frond tips (viewBox padding + `overflow="visible"`), one-viewport Home without clipped feature cards/footer, frosted "Why AirAware" pill, `float-slow` ambient hero-card levitation; `npm run build` zero TS errors; committed
+**Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log). The frosted-glass + botanical upgrade pass (`.glass-panel`, split-hero Home, paper-cut Login) was committed at `c5130e2`.
+
+---
+
+## Botanical Foliage + One-Screen Home Pass (complete)
+
+- [x] **FoggyBackdrop filled foliage** (`frontend/src/components/FoggyBackdrop.tsx`): replaced all blunt round-stroked fronds with closed filled lens-leaf silhouettes — `TaperedLeaf` primitive (two quadratic curves tapering to fine points), `PalmFrond` (filled rachis + 9 shrinking leaflet pairs), `Fern` (Bézier-seated pinnae via `qPoint` on an arched stem), `CanopyBranch` (filled limb + 7 tapered blades); sky glows, sculpted paper-cut wave layers and mist preserved
+- [x] **Tip visibility**: ferns re-seated so full tapered tips sit inside the `viewBox` (previously their tips fell below the canvas at `xMidYMax slice`); top-corner canopy branches nudged down into frame so blades stay visible at 1280×720
+- [x] **Home one-screen fit** (`frontend/src/pages/Home.tsx`): root `lg:h-dvh lg:min-h-dvh lg:flex lg:flex-col lg:justify-between lg:overflow-hidden` — brand bar + split hero + 3 compact feature cards + footer fit a single desktop viewport (1280×720–1440×900) with no scroll, still stacks at 360px; tightened header/hero/section/footer spacing
+- [x] **`.card-lift` hover animation** (`frontend/src/index.css`): GPU-composited lift (independent `translate`/`scale` properties + shadow, 0.3s `--ease-soft`) applied to the 3 hero preview cards and the 3 "Why AirAware" cards; fine-pointer hover gate (`hover:hover` + `pointer:fine`), strictly off under `prefers-reduced-motion`; unlayered after `.glass-panel` so the hover shadow wins
+- [x] **Home footer pill**: bottom "Data: CPCB · OpenAQ · Open-Meteo — built for India's air, for everyone's lungs." line wrapped in a frosted pill (`bg-white/75 backdrop-blur-md px-4 py-1.5 rounded-full text-[#1E2E24] font-medium shadow-sm`) so it never blends into the dark green waves; redundant © line dropped
+- [x] **Login cleanup** (`frontend/src/pages/Login.tsx`): removed the faint `FrondSilhouette` overlay (full botanical backdrop already lives in FoggyBackdrop behind the card); feature bullets now `text-[14.5px] leading-relaxed text-[#F2F7F4]` with clean spacing; bottom caption became a crisp frosted pill, redundant low-contrast page footer removed
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules, ~3.7s; only the pre-existing >500kB chunk-size warning)
+- [x] Committed (was left uncommitted in the tree; the "Home Polish Pass" commit below folds in these FoggyBackdrop/Home/Login/index.css changes)
+
+---
+
+## Home Polish Pass – 5 Task Fixes (complete)
+
+- [x] **Task 1 – Un-clip frond tips** (`frontend/src/components/FoggyBackdrop.tsx`): botanical `<svg>` viewBox widened to `-160 0 1760 560` + `overflow="visible"` so left palm-frond blades complete to pointed tips instead of hitting the viewBox edge; far/mid canopy + near wave silhouette paths and the ground-mist rect extended across the widened span (`-160 → 1600`) so no edge gaps; left `FrondCluster` nudged inward (`x -40 → -24`); outer wrapper `overflow-hidden` kept
+- [x] **Task 2 – Stop clipping bottom cards/footer** (`frontend/src/pages/Home.tsx`): root is now `flex min-h-dvh flex-col justify-between` — dropped `lg:overflow-hidden` and the rigid `lg:h-dvh lg:min-h-dvh` height lock; all 3 "Why AirAware" cards (full size/padding kept) + footer now render 100% visible
+- [x] **Task 3 – "Why AirAware" contrast** (`frontend/src/pages/Home.tsx`): heading restyled as a high-contrast frosted pill — `inline-flex items-center px-3.5 py-1 rounded-full bg-white/85 backdrop-blur-md border border-white/90 text-[#1E2E24] font-semibold shadow-sm`
+- [x] **Task 4 – `float-slow` ambient levitation** (`frontend/src/index.css` + `Home.tsx`): `@keyframes float-slow` (translate3d-only drift: `(0,0,0) → (4px,-7px,0) → (-3px,-3px,0)`, 7s ease-in-out infinite alternate) defined strictly inside `@media (prefers-reduced-motion: no-preference)`; applied to the 3 hero `<article>` cards with staggered `animation-delay` 0s / 1.2s / 2.4s; composes cleanly with `.card-lift` (independent `translate`/`scale` hover properties) and `.animate-card-rise` (wrapper div)
+- [x] **Task 5 – Verify & commit**: `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules; only the pre-existing >500kB chunk warning)
+- [x] Committed
 
 ---
 
