@@ -132,3 +132,55 @@ body {
     transition: none;
   }
 }
+
+/* Profile Builder Wizard — directional step transitions (emil-design-eng):
+   translateX + opacity only (GPU-composited), ≤300ms settle on --ease-soft.
+   forward: incoming slides in from the right / outgoing exits left; backward
+   reverses. The progress rail fill animates width on the same curve. */
+@keyframes wizard-in-forward {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes wizard-in-backward {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes wizard-out-forward {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-28px); }
+}
+@keyframes wizard-out-backward {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(28px); }
+}
+
+.wiz-in-f { animation: wizard-in-forward 0.28s var(--ease-soft) both; }
+.wiz-in-b { animation: wizard-in-backward 0.28s var(--ease-soft) both; }
+.wiz-out-f {
+  animation: wizard-out-forward 0.28s var(--ease-soft) both;
+  pointer-events: none;
+}
+.wiz-out-b {
+  animation: wizard-out-backward 0.28s var(--ease-soft) both;
+  pointer-events: none;
+}
+
+.wiz-progress-fill {
+  transition: width 0.3s var(--ease-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiz-in-f,
+  .wiz-in-b,
+  .wiz-out-f,
+  .wiz-out-b {
+    animation: none;
+  }
+  .wiz-out-f,
+  .wiz-out-b {
+    display: none; /* hide the exiting step; the incoming step pins visible */
+  }
+  .wiz-progress-fill {
+    transition: none;
+  }
+}

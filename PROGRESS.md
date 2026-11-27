@@ -2,7 +2,7 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: Phase 6A complete – Public Homepage + aligned Login/Sign Up views; `npm run build` zero TS errors; committed
+**Current Phase**: Phase 6B complete – Profile Builder Wizard redesign (frosted-glass card, directional step transitions, toggle chips, GPS/manual/skip home-base + Profile Summary Card); `npm run build` zero TS errors; committed
 **Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log).
 
 ---
@@ -48,6 +48,18 @@ All checklist items verified:
   - [x] Auth transitions cleanly: `onAuthStateChange` flips user state → route guard bounces to `/dashboard`
   - [x] All styling migrated from slate defaults to the sky-blue & pine token set (Deep Pine buttons, sage borders, sky-soft focus rings, Warm Dawn accents)
 - [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1655 modules, 2.75s)
+- [x] Committed
+
+---
+
+## Phase 6B: Profile Builder Wizard Redesign (complete)
+
+- [x] **Task 1 – Frosted-glass wizard card** (`frontend/src/pages/LifestyleProfiles.tsx`): zero-profiles intro now lives inside a frosted card (`bg-white/80 backdrop-blur-md border-white/60 rounded-2xl`) with Sky-Soft → Canopy-Mist gradient washes + soft blur orbs; Playfair Display step headings with Warm Dawn `<em>` accents; animated 3-step progress rail (numbered dots + `.wiz-progress-fill` width transition on `--ease-soft`)
+- [x] **Task 2 – Directional step transitions**: `.wiz-in-f`/`.wiz-in-b` incoming + `.wiz-out-f`/`.wiz-out-b` outgoing layers (translateX ±28px + opacity, 0.28s, GPU-composited) driven by `prevStep`/`direction` state with a 300ms settle timeout; `prefers-reduced-motion` pins the incoming step and hides the outgoing layer; `press-soft` + `active:scale-[0.98]` on all wizard buttons
+- [x] **Task 3 – Step 2 toggle chips**: both `<select multiple>` replaced by `type="button"` + `aria-pressed` chip grids for Health Conditions (None mutually exclusive) and Protective Habits; +Other inline inputs (Add button + Enter-to-add) append trimmed custom values; live "Selected" badge strips with removable tags
+- [x] **Task 4 – Step 3 home base**: "Use My Current Location" GPS button porting the `SavedLocations.tsx` pattern (`inIndia` bounds, Nominatim reverse geocode with `user-agent=AirAware/1.0`, monotonic `pickSeq` counter); Manual Entry (name/lat/lng/type) with insert-if-new `saved_locations` "Home" row capturing the new id; saved-location select; Skip option; confirm inserts `lifestyle_profiles` with `home_location_id` + `is_active: true` and refreshes the profiles context; compact Profile Summary Card above "Confirm & Create Profile"
+- [x] `FormState`/`emptyForm` reconciled with `profileToForm`/`saveProfile`/add-edit panel (string `healthConditionsText` + 3 habit booleans); wizard keeps independent `WizardState` string arrays; unused imports removed
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1655 modules, 3.22s)
 - [x] Committed
 
 ---
@@ -179,7 +191,7 @@ Superseded checklist items (kept for traceability):
 
 ### Phase 6: Public Homepage + Profile Builder + Motion polish
 - [x] **Public Homepage** (foggy nature hero, title, short intro, Log In / Sign Up): Deep Pine `#1E2E24`, Misty Alabaster `#F4F6F3`, Sage `#E6ECE7`, Warm Dawn `#C89666`
-- [x] **Initial Profile Builder Wizard** post-signup: age, lifestyle, health conditions, home base selection
+- [x] **Initial Profile Builder Wizard** post-signup: age, lifestyle, health conditions, home base selection (redesigned in Phase 6B — frosted-glass card, directional transitions, toggle chips, GPS/manual/skip home base + summary card; see below)
 - [x] **`emil-design-eng` motion polish**: component press/hover states, popover origins, tooltip timing, transitions vs keyframes
 - [x] State-machine / break edge-case checks (reduced motion, screen-size, auth state)
 - [x] **Title hover/tap attributes**: truncated stop-summary labels and routine names recoverable on phones/laptops
