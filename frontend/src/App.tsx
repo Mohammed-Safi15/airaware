@@ -10,6 +10,7 @@ import { LifestyleProfiles } from "./pages/LifestyleProfiles";
 import { RoutinesPage } from "./pages/Routines";
 import { AwarenessPage } from "./pages/Awareness";
 import { HistoryImpactPage } from "./pages/HistoryImpact";
+import { AskAirAware } from "./pages/AskAirAware";
 import { LoginPage } from "./pages/Login";
 import { Home } from "./pages/Home";
 import { ProfilesProvider } from "./lib/profileContext";
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="/routines" element={<RoutinesPage />} />
             <Route path="/awareness" element={<AwarenessPage />} />
             <Route path="/history" element={<HistoryImpactPage />} />
+            <Route path="/ask" element={<AskAirAware />} />
             <Route path="/account" element={<Navigate to="/settings" replace />} />
           </Route>
 

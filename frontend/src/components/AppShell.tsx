@@ -9,6 +9,7 @@ import {
   Menu,
   Route,
   Settings,
+  Sparkles,
   User,
   Users,
   Wind,
@@ -122,6 +123,11 @@ export function AppShell({ user, setUser }: AppShellProps) {
           <NavLink to="/history" className={({ isActive }) => navLinkClass(isActive)}>
             <BarChart3 className="h-4 w-4 shrink-0" />
             <span>History &amp; My Impact</span>
+          </NavLink>
+
+          <NavLink to="/ask" className={({ isActive }) => navLinkClass(isActive)}>
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>Ask AirAware</span>
           </NavLink>
         </nav>
 

@@ -2,7 +2,7 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: Home polish pass complete – un-clipped frond tips (viewBox padding + `overflow="visible"`), one-viewport Home without clipped feature cards/footer, frosted "Why AirAware" pill, `float-slow` ambient hero-card levitation; `npm run build` zero TS errors; committed
+**Current Phase**: Ask AirAware chat feature complete – `POST /api/chat` Worker endpoint (deterministic-first + Workers AI overlay with scope guardrails), new `AskAirAware.tsx` page as 7th `/ask` sidebar route (glass-panel, Playfair heading, 4 starter cards, session-only bubbles, loading dots, clear chat, responsive input), "Have a question? Ask AirAware →" CTA in Routines advice card; `npx tsc --noEmit` (worker) + `npm run build` (frontend) zero errors; committed
 **Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log). The frosted-glass + botanical upgrade pass (`.glass-panel`, split-hero Home, paper-cut Login) was committed at `c5130e2`.
 
 ---
@@ -23,7 +23,7 @@
 ## Home Polish Pass – 5 Task Fixes (complete)
 
 - [x] **Task 1 – Un-clip frond tips** (`frontend/src/components/FoggyBackdrop.tsx`): botanical `<svg>` viewBox widened to `-160 0 1760 560` + `overflow="visible"` so left palm-frond blades complete to pointed tips instead of hitting the viewBox edge; far/mid canopy + near wave silhouette paths and the ground-mist rect extended across the widened span (`-160 → 1600`) so no edge gaps; left `FrondCluster` nudged inward (`x -40 → -24`); outer wrapper `overflow-hidden` kept
-- [x] **Task 2 – Stop clipping bottom cards/footer** (`frontend/src/pages/Home.tsx`): root is now `flex min-h-dvh flex-col justify-between` — dropped `lg:overflow-hidden` and the rigid `lg:h-dvh lg:min-h-dvh` height lock; all 3 "Why AirAware" cards (full size/padding kept) + footer now render 100% visible
+- [ ] **Task 2 – Stop clipping bottom cards/footer** (`frontend/src/pages/Home.tsx`): root is now `flex min-h-dvh flex-col justify-between` — dropped `lg:overflow-hidden` and the rigid `lg:h-dvh lg:min-h-dvh` height lock; all 3 "Why AirAware" cards (full size/padding kept) + footer now render 100% visible
 - [x] **Task 3 – "Why AirAware" contrast** (`frontend/src/pages/Home.tsx`): heading restyled as a high-contrast frosted pill — `inline-flex items-center px-3.5 py-1 rounded-full bg-white/85 backdrop-blur-md border border-white/90 text-[#1E2E24] font-semibold shadow-sm`
 - [x] **Task 4 – `float-slow` ambient levitation** (`frontend/src/index.css` + `Home.tsx`): `@keyframes float-slow` (translate3d-only drift: `(0,0,0) → (4px,-7px,0) → (-3px,-3px,0)`, 7s ease-in-out infinite alternate) defined strictly inside `@media (prefers-reduced-motion: no-preference)`; applied to the 3 hero `<article>` cards with staggered `animation-delay` 0s / 1.2s / 2.4s; composes cleanly with `.card-lift` (independent `translate`/`scale` hover properties) and `.animate-card-rise` (wrapper div)
 - [x] **Task 5 – Verify & commit**: `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules; only the pre-existing >500kB chunk warning)
@@ -238,7 +238,26 @@ Superseded checklist items (kept for traceability):
   - [x] History & My Impact Calculator page
   - [x] **Phase 5 Exit Gate**: Complete – advice-card contrast/debug-text fix, current AI models, phone & laptop responsiveness pass, and clean builds all verified; stopping at Phase 5 gate, do not proceed to Phase 6
 
-### Phase 6: Public Homepage + Profile Builder + Motion polish
+### Phase 6A: Chat Endpoint + AskAirAware Page
+- [x] **5.2 – `POST /api/chat` Worker endpoint** (`worker/src/lib/chat.ts` + new route in `worker/src/index.ts`)
+  - [x] Deterministic keyword-matched fallback answering core AQI, health, lifestyle, and nature questions
+  - [x] Polite off-topic refusal with 2-3 AirAware topic suggestions for unmatched queries
+  - [x] Workers AI model fallback (`@cf/meta/llama-3.2-3b-instruct` primary, `@cf/meta/llama-3.3-70b-instruct-fp8-fast` secondary) per user spec overriding existing code
+  - [x] Strict scope guardrails: answers only about AQI, air pollutants, health precautions, lifestyle adjustments, protective gear, nature/environmental actions
+  - [x] CORS enabled; `[ai] binding = "AI"` already configured
+  - [x] `npx tsc --noEmit` in `worker/` passes; `npm run build` in `frontend/` clean
+- [x] **6A.2 – AskAirAware.tsx page** (`frontend/src/pages/AskAirAware.tsx`)
+  - [x] 7th sidebar route `/ask` with `.glass-panel` material
+  - [x] Playfair Display heading + "Tailored for [Active Profile Name]" frosted-glass pill
+  - [x] 4 starter cards: AQI Scales, Health & Gear, Daily Lifestyle, Nature & Future
+  - [x] Session-only conversation view with animate-card-rise bubbles
+  - [x] Loading dots while awaiting /api/chat
+  - [x] "Clear Chat" button functionality
+  - [x] Responsive input bar with active:scale-[0.98] at 360px phone and 1440px laptop
+- [x] **6A.3 – Add "Ask AirAware" NavLink** in AppShell.tsx drawer as 7th NavLink (Sparkles or MessageSquare icon)
+- [x] **6A.4 – Wire /ask route** in frontend/src/App.tsx Routes
+- [x] **6A.5 – Add "Have a question? Ask AirAware →" link** at bottom of advice card in Routines.tsx navigating to /ask
+- [x] **6A.6 – Update PROGRESS.md** and commit cleanly
 - [x] **Public Homepage** (foggy nature hero, title, short intro, Log In / Sign Up): Deep Pine `#1E2E24`, Misty Alabaster `#F4F6F3`, Sage `#E6ECE7`, Warm Dawn `#C89666`
 - [x] **Initial Profile Builder Wizard** post-signup: age, lifestyle, health conditions, home base selection (redesigned in Phase 6B — frosted-glass card, directional transitions, toggle chips, GPS/manual/skip home base + summary card; see below)
 - [x] **`emil-design-eng` motion polish**: component press/hover states, popover origins, tooltip timing, transitions vs keyframes

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MapView } from "../components/MapView";
 import { useAuth } from "../App";
 import { useProfiles } from "../lib/profileContext";
@@ -80,6 +81,7 @@ function totalDurationLabel(mins: number): string {
 export function RoutinesPage() {
   const { user } = useAuth();
   const { activeProfile } = useProfiles();
+  const navigate = useNavigate();
 
   const [routines, setRoutines] = useState<RoutineRow[]>([]);
   const [segments, setSegments] = useState<Record<string, RoutineSegmentRow[]>>({});
@@ -711,6 +713,13 @@ export function RoutinesPage() {
                         )}
                       </>
                     )}
+
+                    <button
+                      onClick={() => navigate("/ask")}
+                      className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--color-sage-border)] bg-white/70 px-3 py-2 text-xs font-semibold text-[var(--color-deep-pine)] transition-colors hover:bg-white active:scale-[0.98]"
+                    >
+                      Have a question? Ask AirAware →
+                    </button>
                   </div>
                 )}
               </div>

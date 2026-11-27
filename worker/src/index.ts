@@ -4,6 +4,7 @@ import { fetchOpenAQLocations, buildOpenAQStation } from "./lib/fetchers/openaq.
 import { fetchOpenMeteo, buildOpenMeteoStation } from "./lib/fetchers/open-meteo.js";
 import { toNAQI, category, toUSAQI, usaCategory } from "./lib/nqi.js";
 import { buildAdvice, type AdviceRequest } from "./lib/advice.js";
+import { getChatResponse } from "./lib/chat.js";
 import type { AQResponse, StationObservation, Reliability } from "./types/aq.js";
 
 // ---------------------------------------------------------------------------
@@ -107,6 +108,9 @@ export default {
       case "/api/advice":
         if (request.method !== "POST") return json({ error: "Method Not Allowed. POST with JSON body." }, 405);
         return handleAdvice(request, env, ctx);
+      case "/api/chat":
+        if (request.method !== "POST") return json({ error: "Method Not Allowed. POST with JSON body." }, 405);
+        return handleChat(request, env, ctx);
       default:
         return json({ error: "Not Found", endpoint: url.pathname }, 404);
     }
@@ -302,4 +306,164 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
   // Populate the cache without blocking the response.
   ctx.waitUntil(cachePut(cacheKey, body));
   return json(response, 200, { "Cache-Control": `public, max-age=${Math.floor(CACHE_TTL_MS / 1000)}` });
+}
+
+interface ChatProfile {
+  name?: string;
+  age?: number;
+  lifestyle?: string;
+  health_conditions?: string[];
+}
+
+function parseChatProfile(b: Record<string, unknown>): ChatProfile | null {
+  if (!b.profile || typeof b.profile !== "object") return null;
+  const p = b.profile as Record<string, unknown>;
+  return {
+    name: typeof p.name === "string" ? p.name.slice(0, 80) : undefined,
+    age: typeof p.age === "number" && Number.isFinite(p.age) ? p.age : undefined,
+    lifestyle: typeof p.lifestyle === "string" ? p.lifestyle.slice(0, 60) : undefined,
+    health_conditions: Array.isArray(p.health_conditions)
+      ? p.health_conditions.map((c) => String(c)).slice(0, 12)
+      : undefined,
+  };
+}
+
+async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body." }, 400);
+  }
+
+  if (!body || typeof body !== "object") return json({ error: "Body must be a JSON object." }, 400);
+  const b = body as Record<string, unknown>;
+  const message = typeof b.message === "string" ? b.message.trim().slice(0, 2000) : "";
+  const profile = parseChatProfile(b);
+
+  if (message.length === 0) {
+    return json({ error: "Field 'message' must be a non-empty string." }, 400);
+  }
+
+  // Deterministic keyword-matched fallback — always available, no binding needed.
+  const det = getChatResponse(message);
+
+  // No AI binding → deterministic answer (or polite off-topic refusal).
+  if (!env.AI) {
+    return json({
+      response: det.response,
+      suggestions: det.suggestions,
+      source: "deterministic",
+    }, 200, { "Cache-Control": "no-store" });
+  }
+
+  const profileContext = profile
+    ? [
+        `Profile: ${profile.name || "You"},`,
+        `age: ${profile.age ?? "adult"},`,
+        `lifestyle: ${profile.lifestyle || "Other"},`,
+        `health conditions: ${profile.health_conditions?.length ? profile.health_conditions.join(", ") : "none"}`,
+      ].join(" ")
+    : "";
+
+  const systemPrompt =
+    "You are AirAware's chat assistant. Answer ONLY questions about air quality, air pollutants, " +
+    "health precautions, lifestyle adjustments, protective gear, and nature/environmental actions " +
+    "related to air quality. " +
+    "Ground every claim in air quality data; never invent measurements, stations, forecasts or weather. " +
+    "Never substitute zero for missing readings — say data is unavailable. " +
+    "Keep responses concise and practical, plain text, no markdown.\n" +
+    (profileContext ? `${profileContext}.\n` : "") +
+    "Scope guardrail: if the question is unrelated to air quality, politely say it is outside AirAware's " +
+    "focus and suggest 2–3 relevant AirAware topics (AQI, health precautions, daily lifestyle habits, " +
+    "protective gear, eco-friendly actions for nature).";
+
+  const aiMessages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: message },
+  ];
+
+  // llama-3.2-3b primary (per spec) with the larger fast model as secondary.
+  const modelSequence = ["@cf/meta/llama-3.2-3b-instruct", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"];
+  let lastError: string | undefined;
+
+  for (const model of modelSequence) {
+    try {
+      const started = Date.now();
+      const aiAttempt = (async () => {
+        const race: Promise<{ response: string } | { timedOut: true }> = env.AI.run(model, {
+          raw: true,
+          messages: aiMessages,
+          temperature: 0.3,
+          max_tokens: 400,
+        }) as Promise<{ response: string } | { timedOut: true }>;
+        const timeout = new Promise<{ timedOut: true }>((resolve) =>
+          setTimeout(() => resolve({ timedOut: true }), 30_000),
+        );
+        const rawRes = await Promise.race([race, timeout]);
+        if ("timedOut" in rawRes) throw new Error(`AI timeout after 30s`);
+        if (typeof rawRes.response !== "string" || rawRes.response.trim().length === 0) {
+          throw new Error("AI returned no text payload");
+        }
+        return rawRes.response.trim();
+      })();
+      const aiOut = await aiAttempt;
+
+      ctx.waitUntil(
+        (async () => {
+          console.log(`[chat] source=ai model=${model} took=${Date.now() - started}ms`);
+        })(),
+      );
+
+      // AI went off-scope (hallucinated beyond AirAware topics) → use the
+      // polite refusal instead, keeping the deterministic guardrail intact.
+      const inScope = isInScopeAirQualityReply(aiOut);
+      return json(
+        {
+          response: inScope ? aiOut : det.response,
+          suggestions: det.suggestions,
+          source: inScope ? "ai" : "deterministic",
+        },
+        200,
+        { "Cache-Control": "no-store" },
+      );
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[chat] AI model ${model} failed: ${lastError}`);
+      continue;
+    }
+  }
+
+  // All AI models failed — degrade to the deterministic answer.
+  ctx.waitUntil(
+    (async () => {
+      console.log(`[chat] source=deterministic-fallback ai_error=${lastError}`);
+    })(),
+  );
+  return json(
+    {
+      response: det.response,
+      suggestions: det.suggestions,
+      source: "deterministic-fallback",
+      ai_error: lastError || "AI model failed",
+    },
+    200,
+    { "Cache-Control": "no-store" },
+  );
+}
+
+/**
+ * Heuristic scope check on an AI reply: flag it as off-scope when it clearly
+ * abandons the air-quality context (e.g. answers a politics or cooking question).
+ * The deterministic off-topic refusal is used instead in that case.
+ */
+function isInScopeAirQualityReply(reply: string): boolean {
+  const lower = reply.toLowerCase();
+  const inScopeSignals = [
+    "air quality", "aqi", "naqi", "pollutant", "pm2.5", "pm10", "ozone",
+    "mask", "n95", "purifier", "hepa", "precaution", "health", "breathing",
+    "respiratory", "outdoor", "indoor", "emission", "green", "sustainab",
+    "airaware", "out of scope", "outside airaware", "air quality focus",
+  ];
+  return inScopeSignals.some((s) => lower.includes(s));
 }
