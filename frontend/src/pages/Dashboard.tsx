@@ -27,6 +27,18 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   return "Unknown location";
 }
 
+// Top-level so the component identity is stable across renders — defining it
+// inside Dashboard would remount the Save Location modal's inputs on every
+// keystroke, losing focus while typing.
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export function Dashboard({ }: DashboardProps) {
   const { user } = useAuth();
   const { activeProfile } = useProfiles();
@@ -40,15 +52,6 @@ export function Dashboard({ }: DashboardProps) {
   const [saveLocationType, setSaveLocationType] = useState<"Home" | "Work" | "College" | "Gym" | "Other">("Home");
   const [saveLocationName, setSaveLocationName] = useState("");
   const [locating, setLocating] = useState(false);
-
-  function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
-        {children}
-      </label>
-    );
-  }
 
   async function fetchAQI(queryLat: number, queryLng: number, name: string) {
     setLoading(true);
