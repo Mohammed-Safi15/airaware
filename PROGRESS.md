@@ -2,7 +2,7 @@
 
 ### Phase 5 Completed – Hybrid Rule + Workers AI Advice Engine, AQI Awareness Guide
 
-**Current Phase**: UI declutter pass complete – NAQI-only Routines display (US pill removed), high-contrast amber AQI badge, clean "Map Pinpoint" labels, decluttered exposure panels (Exposure Share + plain-English "Why This Score"), new Personal Exposure explainer on Awareness; `npm run build` zero TS errors; committed
+**Current Phase**: Frosted-glass + botanical UI upgrade pass complete – signature `.glass-panel` / `.glass-panel-solid` material, botanical foliage & paper-cut wave backdrops (Home + Login), enriched scientific `AtmosphericBackdrop`, split-hero landing with staggered glass preview cards, paper-cut wave Login split card; `npm run build` zero TS errors; committed
 **Historic Note**: Phase 5A/B (advice endpoint + Awareness page) verified at commit `4a05ce8`. Phase 5C adds the History & My Impact Calculator page (exposure check history + protective-action impact log).
 
 ---
@@ -72,6 +72,19 @@ All checklist items verified:
 - [x] **Routines declutter** (`frontend/src/pages/Routines.tsx`): stripped raw `(lat, lng)` from map-pinpoint stop labels (now `Map Pinpoint`, both in routine segments and new pins); removed "Sensitivity ×…" multiplier from the score panel; replaced "Inhaled dose breakdown" with a clean **Exposure Share** section (stop name, duration, % share only, bar keeps NAQI-tier color); replaced "Why this score" with a plain-English summary (top contributing stop by share + tier, age/health sensitivity flag, mask/indoor/vehicle-cabin softening notes); dropped raw `Adult baseline: ×1.00` reason lines and the "Total inhaled dose X / budget 800" line; **Suggested Actions** kept unchanged
 - [x] **Awareness explainer** (`frontend/src/pages/Awareness.tsx`): new "How AirAware Calculates Your Personal Exposure" section — five-step plain-English breakdown (live NAQI → stop duration → indoor/outdoor setting → protective gear → personal sensitivity weighting) plus a short NAQI vs US EPA AQI note, styled in the existing frosted-card / Deep Pine pattern; engine math in `exposure.ts` untouched (PRD guardrails preserved)
 - [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules, 3.27s)
+- [x] Committed
+
+---
+
+## Frosted-Glass & Botanical UI Upgrade Pass (complete)
+
+- [x] **Task 1 – Signature frosted-glass material** (`frontend/src/index.css`): new house card-surface classes `.glass-panel` (translucent white/60 tint, `blur(24px) saturate(1.5)`, white/80 border, deep soft shadow + inset top glass-rim highlight) and `.glass-panel-solid` (white/72 tint for data-dense cards); two new botanical tokens `--color-forest: #2D4739` / `--color-sage-leaf: #52796F`; GPU-composited `.leaf-sway` / `.leaf-sway-b` keyframes (transform-only, `will-change: transform`) with `prefers-reduced-motion` guards
+- [x] **Task 2 – Botanical & paper-cut backdrops** (`frontend/src/components/FoggyBackdrop.tsx` + `frontend/src/components/AtmosphericBackdrop.tsx`):
+  - FoggyBackdrop (public Home + Login): sky-blue radial glow washes (`#BAE6FD` / `#38BDF8`), multi-layered SVG botanical silhouettes (palm fronds, ferns, canopy branches in Deep Pine `#1E2E24` / Forest `#2D4739` / Sage `#52796F`) and three sculpted paper-cut wave contours with soft drop-shadow filters, positioned directly behind the hero/auth cards so the frosted glass visibly blurs leaf shapes + sky gradients; drifting mist + gentle leaf-sway motion, all `pointer-events-none` / `aria-hidden` / `prefers-reduced-motion`-guarded
+  - AtmosphericBackdrop (logged-in app): added soft sky-blue atmospheric altitude bands, two extra dashed wind-stream traces, and very low-opacity (≤0.10) corner botanical silhouettes so AQI badges on frosted panels keep full contrast
+- [x] **Task 3 – Home split-hero redesign** (`frontend/src/pages/Home.tsx`): duplicate CTAs removed (top-right "Log In" header link and footer "Create your account →" deleted; the two hero buttons now appear exactly once); instant-clarity split hero — left: eyebrow pill (`Hyperlocal Indian AQI · Personal Exposure`), Playfair headline, 2-line explanation, `Get Started (Sign Up)` + `Log In` pill buttons (`active:scale-[0.98]`); right: three staggered `.glass-panel` preview cards (Neighbourhood Station `Indiranagar, Bengaluru · 74 Satisfactory` warm-gold badge + `1.4 km away` pill; Personal Sensitivity `Aarav, 21 · N95 Mask + HEPA Filter → Low Exposure`; 3-stop `Home → Metro → Campus` route bar + `31 · Low` exposure score) with hover-lift micro-interactions; below-the-fold: three compact `.glass-panel` feature cards (`Exact Neighbourhood Stations` / `Household Health Profiles` / `Multi-Stop Routine & AI Tips`) with hover-lift; clean minimal footer; responsive 360px → 1440px
+- [x] **Task 4 – Login paper-cut wave split card** (`frontend/src/pages/Login.tsx`): card migrated to `.glass-panel`; desktop brand pane now layers a sculpted paper-cut wave edge (glass sheet with soft drop shadow falling onto the Deep Pine pane) over rich shadowed botanical frond silhouettes + a sky-blue corner glow; mobile (360–640px) centers the `.glass-panel` auth card directly over the lush `FoggyBackdrop` foliage so the glass blurs the leaves behind it
+- [x] `npm run build` in `frontend/` passes with zero TypeScript errors (1656 modules, 4.20s)
 - [x] Committed
 
 ---

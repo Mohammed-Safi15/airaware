@@ -24,7 +24,23 @@ export function AtmosphericBackdrop() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, var(--color-sky-soft) 0%, var(--color-misty-alabaster) 42%, var(--color-canopy-mist) 100%)",
+            "linear-gradient(180deg, #bae6fd 0%, var(--color-sky-soft) 22%, var(--color-misty-alabaster) 52%, var(--color-canopy-mist) 100%)",
+        }}
+      />
+
+      {/* Soft sky-blue atmospheric bands — horizontal washes of altitude */}
+      <div
+        className="absolute inset-x-0 top-0 h-[34%]"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(56, 189, 248, 0.14), rgba(56, 189, 248, 0.04) 70%, transparent)",
+        }}
+      />
+      <div
+        className="absolute inset-x-0 top-[30%] h-[30%]"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent, rgba(186, 230, 253, 0.12) 50%, transparent)",
         }}
       />
 
@@ -54,6 +70,8 @@ export function AtmosphericBackdrop() {
         >
           <path d="M -40 330 C 300 300, 600 360, 900 320 S 1300 300, 1480 340" />
           <path d="M -40 520 C 320 550, 640 490, 960 530 S 1320 560, 1480 520" />
+          <path d="M -40 200 C 280 180, 560 220, 880 195 S 1280 175, 1480 210" />
+          <path d="M -40 660 C 300 640, 620 700, 940 665 S 1320 640, 1480 675" />
         </g>
 
         {/* One deep-pine streamline for depth */}
@@ -65,6 +83,26 @@ export function AtmosphericBackdrop() {
           strokeDasharray="1 10"
           opacity="0.08"
         />
+
+        {/* Subtle corner botanical silhouettes — very low opacity so the
+            frosted panels and AQI badges keep full contrast over them */}
+        <g stroke="var(--color-forest)" fill="none" opacity="0.10">
+          {/* Top-left frond arch */}
+          <path d="M 30 -20 Q 90 120 40 260" strokeWidth="5" strokeLinecap="round" />
+          <path d="M 30 -20 Q 150 80 190 210" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 30 -20 Q 210 40 300 110" strokeWidth="3" strokeLinecap="round" />
+        </g>
+        <g stroke="var(--color-sage-leaf)" fill="none" opacity="0.09">
+          {/* Bottom-right fern cluster */}
+          <path d="M 1420 920 Q 1380 780 1430 660" strokeWidth="5" strokeLinecap="round" />
+          <path d="M 1420 920 Q 1300 800 1270 700" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 1420 920 Q 1240 840 1180 790" strokeWidth="3" strokeLinecap="round" />
+        </g>
+        <g stroke="var(--color-deep-pine)" fill="none" opacity="0.06">
+          {/* Bottom-left ground frond */}
+          <path d="M -20 880 Q 140 800 320 830" strokeWidth="4" strokeLinecap="round" />
+          <path d="M -20 920 Q 160 860 360 880" strokeWidth="3" strokeLinecap="round" />
+        </g>
       </svg>
 
       {/* Particulate / altitude scale ticks — right edge, hidden on phones */}

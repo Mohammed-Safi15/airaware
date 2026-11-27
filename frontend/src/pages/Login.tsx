@@ -8,10 +8,86 @@ interface LoginPageProps {
   onLogin: (user: User) => void;
 }
 
+type Pt = readonly [number, number];
+
+/** Point on a quadratic Bézier at parameter t. */
+function qPoint(
+  p0: Pt,
+  c: Pt,
+  p1: Pt,
+  t: number,
+): [number, number] {
+  const u = 1 - t;
+  return [
+    u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0],
+    u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1],
+  ];
+}
+
+/* Botanical frond silhouettes for the deep-pine brand pane — a small
+   sculpted cluster that sits behind the frosted glass and under the
+   paper-cut wave edge. GPU-cheap static SVG with a soft drop shadow. */
+const FROND_STEMS: readonly {
+  p0: Pt;
+  c: Pt;
+  p1: Pt;
+  color: string;
+  width: number;
+  opacity: number;
+}[] = [
+  { p0: [20, 172], c: [80, 90], p1: [212, 64], color: "#9fb4a8", width: 5, opacity: 0.55 },
+  { p0: [44, 172], c: [112, 108], p1: [232, 92], color: "#52796f", width: 4, opacity: 0.5 },
+  { p0: [66, 172], c: [142, 130], p1: [252, 128], color: "#9fb4a8", width: 3, opacity: 0.38 },
+];
+
+function FrondSilhouette() {
+  return (
+    <svg
+      className="pointer-events-none absolute -bottom-8 -left-6 h-44 w-72"
+      viewBox="0 0 280 180"
+      fill="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <filter id="frond-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="-4" stdDeviation="8" floodColor="#0f1a14" floodOpacity="0.4" />
+        </filter>
+      </defs>
+      <g filter="url(#frond-shadow)">
+        {FROND_STEMS.map((s, si) => (
+          <g key={si}>
+            <path
+              d={`M${s.p0[0]} ${s.p0[1]} Q ${s.c[0]} ${s.c[1]} ${s.p1[0]} ${s.p1[1]}`}
+              stroke={s.color}
+              strokeWidth={s.width}
+              strokeLinecap="round"
+              opacity={s.opacity}
+            />
+            {Array.from({ length: 7 }, (_, i) => {
+              const t = 0.18 + i * 0.13;
+              const [x, y] = qPoint(s.p0, s.c, s.p1, t);
+              const len = 20 * (1 - t * 0.55);
+              return (
+                <g key={i} stroke={s.color} strokeWidth="2.5" strokeLinecap="round" opacity={s.opacity * 0.9}>
+                  <path d={`M${x} ${y} l ${len * 0.55} ${-len * 0.75}`} />
+                  <path d={`M${x} ${y} l ${len * 0.4} ${len * 0.6}`} />
+                </g>
+              );
+            })}
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 /**
- * Log In / Sign Up — frosted-glass split card over the sky-to-canopy
- * foggy backdrop. Left pane: brand + feature highlights. Right pane:
- * the auth form. On phones the brand pane collapses to a compact header.
+ * Log In / Sign Up — frosted-glass card over the botanical foggy
+ * backdrop. Desktop: split card with a sculpted paper-cut wave edge
+ * separating the clean form pane from rich shadowed deep-pine fronds +
+ * a sky-blue glow. Mobile (360–640px): the `.glass-panel` auth card
+ * centres directly over the lush foliage so the glass visibly blurs
+ * leaf shapes and sky gradients underneath.
  */
 export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
   return (
@@ -22,19 +98,30 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
       <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pt-5 sm:px-8 sm:pt-7">
         <Link
           to="/"
-          className="press-soft active:scale-[0.98] inline-flex items-center gap-1.5 rounded-full border border-[var(--color-sage-border)] bg-white/70 px-3.5 py-2 text-xs font-semibold text-[var(--color-deep-pine)] backdrop-blur-md hover:bg-white"
+          className="press-soft active:scale-[0.98] glass-panel inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-[var(--color-deep-pine)]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to home
         </Link>
       </div>
 
-      {/* Split card */}
+      {/* Glass auth card — full-width glass sheet on mobile, split card on desktop */}
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 items-center px-5 py-6 sm:px-8 sm:py-8">
-        <div className="animate-card-rise grid w-full grid-cols-1 overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-[0_8px_30px_rgb(30,46,36,0.08)] backdrop-blur-md lg:grid-cols-[1.05fr_1fr]">
-          {/* Brand pane — hidden on phones, compact header there */}
-          <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--color-deep-pine)] to-[var(--color-deep-pine-soft)] p-8 text-[var(--color-misty-alabaster)] lg:flex lg:p-10">
-            <div>
+        <div className="glass-panel animate-card-rise grid w-full max-w-md grid-cols-1 overflow-hidden rounded-3xl lg:w-full lg:max-w-none lg:grid-cols-[1.05fr_1fr]">
+          {/* Brand pane — hidden on phones (compact header there) */}
+          <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[var(--color-deep-pine)] to-[var(--color-deep-pine-soft)] p-8 pr-24 text-[var(--color-misty-alabaster)] sm:pr-28 lg:flex lg:p-10 lg:pr-32">
+            {/* Sky-blue glow */}
+            <div
+              className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full opacity-60"
+              style={{
+                background:
+                  "radial-gradient(closest-side, rgba(56, 189, 248, 0.35), transparent 70%)",
+              }}
+            />
+            {/* Rich shadowed botanical fronds */}
+            <FrondSilhouette />
+
+            <div className="relative pr-2">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
                   <Wind className="h-[18px] w-[18px] text-[var(--color-warm-dawn)]" />
@@ -52,7 +139,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
               </p>
             </div>
 
-            <ul className="mt-10 space-y-3">
+            <ul className="relative mt-10 space-y-3 pr-2">
               {[
                 { icon: Gauge, text: "Live CPCB & OpenAQ stations, mapped to your street" },
                 { icon: Users, text: "Self, child & senior-parent exposure profiles" },
@@ -66,10 +153,31 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
                 </li>
               ))}
             </ul>
+
+            {/* Sculpted paper-cut wave edge — a glass sheet layered over the
+                pine, with a soft shadow falling onto the dark pane */}
+            <svg
+              className="absolute inset-y-0 right-0 h-full w-14 sm:w-16 lg:w-20"
+              viewBox="0 0 100 900"
+              preserveAspectRatio="none"
+              fill="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <filter id="login-wave" x="-30%" y="-5%" width="160%" height="110%">
+                  <feDropShadow dx="-8" dy="0" stdDeviation="12" floodColor="#0f1a14" floodOpacity="0.28" />
+                </filter>
+              </defs>
+              <path
+                d="M52 0 C 88 130, 14 262, 48 400 C 78 522, 22 680, 54 900 L100 900 L100 0 Z"
+                fill="rgba(255,255,255,0.6)"
+                filter="url(#login-wave)"
+              />
+            </svg>
           </aside>
 
           {/* Form pane */}
-          <section className="flex flex-col p-6 sm:p-8">
+          <section className="flex flex-col p-6 sm:p-8 lg:p-10">
             {/* Mobile brand header (pane is hidden on phones) */}
             <div className="mb-6 flex items-center gap-2.5 lg:hidden">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-deep-pine)]">
@@ -88,7 +196,7 @@ export function LoginPage({ onLogin: _onLogin }: LoginPageProps) {
             </h2>
             <AuthPanel />
 
-            <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500 lg:text-left">
               Signing in routes you straight to your dashboard. New accounts
               land on the profile-builder setup.
             </p>

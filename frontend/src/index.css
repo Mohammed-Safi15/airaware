@@ -12,6 +12,8 @@
   --color-sky-accent: #0ea5e9; /* interactive sky accent (focus rings, hover glows) */
   --color-canopy-mist: #e6f2ec; /* forest canopy mist, gradient base over alabaster */
   --color-pine-mist: #9fb4a8; /* muted pine-grey for secondary text on deep-pine surfaces */
+  --color-forest: #2d4739; /* botanical foliage mid-tone (fronds, canopy branches) */
+  --color-sage-leaf: #52796f; /* botanical foliage light-tone (ferns, accent leafs) */
 
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
@@ -72,6 +74,61 @@ body {
   }
   .mist-layer {
     animation: none;
+  }
+}
+
+/* Signature frosted-glass material — the app's house card surface.
+   Translucent alabaster tint + strong blur + saturation + a crisp top
+   glass-rim highlight. Reduced motion is unaffected (this is static). */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 14px 38px rgba(30, 46, 36, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Denser variant for data-heavy cards (station grids, exposure readouts)
+   where the blur needs a heavier tint to keep figures legible. */
+.glass-panel-solid {
+  background-color: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 14px 38px rgba(30, 46, 36, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Gentle GPU-composited leaf sway + mist drift for the botanical backdrop.
+   Transform-only; strictly disabled under prefers-reduced-motion. */
+@keyframes leaf-sway {
+  0%   { transform: rotate(-1.2deg) translateY(0); }
+  100% { transform: rotate(1.2deg) translateY(-4px); }
+}
+@keyframes leaf-sway-b {
+  0%   { transform: rotate(1deg) translateY(0); }
+  100% { transform: rotate(-1deg) translateY(-3px); }
+}
+
+.leaf-sway {
+  transform-origin: top center;
+  animation: leaf-sway 9s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.leaf-sway-b {
+  transform-origin: top center;
+  animation: leaf-sway-b 11s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf-sway,
+  .leaf-sway-b {
+    animation: none;
+    transform: none;
   }
 }
 
