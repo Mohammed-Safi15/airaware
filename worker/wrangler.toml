@@ -7,3 +7,8 @@ binding = "AI"
 
 [vars]
 ENVIRONMENT = "development"
+
+# Optional CORS allowlist: comma-separated extra browser origins permitted to
+# call the API cross-origin (e.g. "https://your-app.pages.dev").
+# The dev origin http://localhost:5173 is always allowed. Uncomment/set at deploy:
+# ALLOWED_ORIGIN = "https://your-app.pages.dev"

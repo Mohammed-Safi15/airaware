@@ -268,6 +268,14 @@ Superseded checklist items (kept for traceability):
 - [x] **Phase 6 Exit Gate**: Verify polish, motion, and edge-case robustness
 
 ---
+## Pre-Deployment Hardening (complete)
+
+- [x] **CORS hardening**: `worker/src/index.ts` replaced wildcard `Access-Control-Allow-Origin: "*"` with an `Origin`-header-driven allowlist — `http://localhost:5173` always permitted, plus configurable `ALLOWED_ORIGIN` env var (comma-separated) for production origins such as `.pages.dev` / `.vercel.app`
+- [x] **SPA fallback routing**: Created `frontend/public/_redirects` (`/* /index.html 200`) and `frontend/vercel.json` (rewrite `(.*)` to `/index.html`) so direct reloads on `/ask`, `/routines`, and `/profiles` resolve cleanly in production
+- [x] **.gitignore verification**: Confirmed exclusions include `.env`, `.env.local`, `.env.*.local`, `.dev.vars` (already present, no change needed)
+- [x] **Clean builds**: `npx tsc --noEmit` in `worker/` and `npm run build` in `frontend/` both pass with zero TypeScript errors
+
+---
 
 ## Architectural & Deployment Notes
 - **Supabase Database**: Schema defined in [`supabase_schema.sql`](worker/supabase_schema.sql) covering all 6 personal tables with Row Level Security (`auth.uid() = user_id`) and auto-updating `updated_at` triggers. Database: `https://ryzztiyjunbgwwkryovi.supabase.co`

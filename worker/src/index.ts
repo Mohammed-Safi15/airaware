@@ -76,14 +76,59 @@ function classifyReliability(station: StationObservation): StationObservation {
 // Router
 // ---------------------------------------------------------------------------
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+/**
+ * Browser origin always permitted so local dev (Vite on 5173) works out of
+ * the box, in addition to whatever production origin(s) the operator sets via
+ * the `ALLOWED_ORIGIN` env var (comma-separated).
+ */
+const DEV_ORIGIN = "http://localhost:5173";
 
-function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
-  return Response.json(data, { status, headers: { ...corsHeaders, ...extraHeaders } });
+/**
+ * Build the CORS headers for a response. The `Origin` request header is echoed
+ * back (with `Vary: Origin` so caches don't leak one origin's header to
+ * another) only when it's on the allowlist; otherwise no
+ * `Access-Control-Allow-Origin` is emitted and the browser blocks the read.
+ * A wildcard `*` is intentionally NOT used: with credentials or a strict
+ * allowlist, echoing a validated origin is the safer, standards-compliant
+ * behavior.
+ */
+function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
+  const requested = request.headers.get("Origin") ?? "";
+
+  const allow = new Set<string>([DEV_ORIGIN]);
+  if (env.ALLOWED_ORIGIN) {
+    for (const o of env.ALLOWED_ORIGIN.split(",")) {
+      const trimmed = o.trim();
+      if (trimmed) allow.add(trimmed);
+    }
+  }
+
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin",
+  };
+
+  if (allow.has(requested)) {
+    headers["Access-Control-Allow-Origin"] = requested;
+  } else if (requested === "") {
+    // Non-browser / same-origin request (no Origin header): nothing to gate.
+    headers["Access-Control-Allow-Origin"] = "*";
+  }
+  // else: unlisted origin → omit the header so the browser blocks the request.
+
+  return headers;
+}
+
+function json(
+  data: unknown,
+  status = 200,
+  request: Request | undefined,
+  env: Env | undefined,
+  extraHeaders: Record<string, string> = {},
+): Response {
+  const cors = request && env ? buildCorsHeaders(request, env) : { "Access-Control-Allow-Origin": "*" };
+  return Response.json(data, { status, headers: { ...cors, ...extraHeaders } });
 }
 
 export default {
@@ -91,28 +136,35 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
+      return new Response(null, { status: 204, headers: buildCorsHeaders(request, env) });
     }
 
     switch (url.pathname) {
       case "/api/health":
-        return json({
-          status: "healthy",
-          service: "airaware-worker",
-          timestamp: new Date().toISOString(),
-          environment: env.ENVIRONMENT || "production",
-        });
+        return json(
+          {
+            status: "healthy",
+            service: "airaware-worker",
+            timestamp: new Date().toISOString(),
+            environment: env.ENVIRONMENT || "production",
+          },
+          200,
+          request,
+          env,
+        );
       case "/api/aqi":
-        if (request.method !== "GET") return json({ error: "Method Not Allowed" }, 405);
-        return handleAQI(url, env, ctx);
+        if (request.method !== "GET") return json({ error: "Method Not Allowed" }, 405, request, env);
+        return handleAQI(url, env, ctx, request);
       case "/api/advice":
-        if (request.method !== "POST") return json({ error: "Method Not Allowed. POST with JSON body." }, 405);
+        if (request.method !== "POST")
+          return json({ error: "Method Not Allowed. POST with JSON body." }, 405, request, env);
         return handleAdvice(request, env, ctx);
       case "/api/chat":
-        if (request.method !== "POST") return json({ error: "Method Not Allowed. POST with JSON body." }, 405);
+        if (request.method !== "POST")
+          return json({ error: "Method Not Allowed. POST with JSON body." }, 405, request, env);
         return handleChat(request, env, ctx);
       default:
-        return json({ error: "Not Found", endpoint: url.pathname }, 404);
+        return json({ error: "Not Found", endpoint: url.pathname }, 404, request, env);
     }
   },
 };
@@ -178,11 +230,11 @@ async function handleAdvice(request: Request, env: Env, ctx: ExecutionContext): 
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Invalid JSON body." }, 400);
+    return json({ error: "Invalid JSON body." }, 400, request, env);
   }
 
   const parsed = parseAdviceRequest(body);
-  if (typeof parsed === "string") return json({ error: parsed }, 400);
+  if (typeof parsed === "string") return json({ error: parsed }, 400, request, env);
 
   const startedAt = Date.now();
   const outcome = await buildAdvice(parsed, env.AI);
@@ -191,23 +243,28 @@ async function handleAdvice(request: Request, env: Env, ctx: ExecutionContext): 
       console.log(`[advice] source=${outcome.source} tips=${outcome.tips.length} ${outcome.ai_error ? `ai_error=${outcome.ai_error} ` : ""}took=${Date.now() - startedAt}ms`);
     })(),
   );
-  return json(outcome, 200, { "Cache-Control": "no-store" });
+  return json(outcome, 200, request, env, { "Cache-Control": "no-store" });
 }
 
-async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Response> {
+async function handleAQI(url: URL, env: Env, ctx: ExecutionContext, request: Request): Promise<Response> {
   const lat = parseFloat(url.searchParams.get("lat") ?? "");
   const lng = parseFloat(url.searchParams.get("lng") ?? "");
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return json({ error: "Invalid coordinates. Provide ?lat=...&lng=..." }, 400);
+    return json({ error: "Invalid coordinates. Provide ?lat=...&lng=..." }, 400, request, env);
   }
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    return json({ error: "Coordinates out of range." }, 400);
+    return json({ error: "Coordinates out of range." }, 400, request, env);
   }
 
   // India bounding box: lat 8-35, lng 68-97
   if (lat < 8 || lat > 35 || lng < 68 || lng > 97) {
-    return json({ error: "Coordinates must be within India (approx. bounding box 68°E–97°E, 8°N–35°N)." }, 400);
+    return json(
+      { error: "Coordinates must be within India (approx. bounding box 68°E–97°E, 8°N–35°N)." },
+      400,
+      request,
+      env,
+    );
   }
 
   // Cache key: rounded ~4 decimal places is ~10 m resolution, plenty for AQI.
@@ -305,7 +362,9 @@ async function handleAQI(url: URL, env: Env, ctx: ExecutionContext): Promise<Res
   const body = JSON.stringify(response);
   // Populate the cache without blocking the response.
   ctx.waitUntil(cachePut(cacheKey, body));
-  return json(response, 200, { "Cache-Control": `public, max-age=${Math.floor(CACHE_TTL_MS / 1000)}` });
+  return json(response, 200, request, env, {
+    "Cache-Control": `public, max-age=${Math.floor(CACHE_TTL_MS / 1000)}`,
+  });
 }
 
 interface ChatProfile {
@@ -333,16 +392,17 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
   try {
     body = await request.json();
   } catch {
-    return json({ error: "Invalid JSON body." }, 400);
+    return json({ error: "Invalid JSON body." }, 400, request, env);
   }
 
-  if (!body || typeof body !== "object") return json({ error: "Body must be a JSON object." }, 400);
+  if (!body || typeof body !== "object")
+    return json({ error: "Body must be a JSON object." }, 400, request, env);
   const b = body as Record<string, unknown>;
   const message = typeof b.message === "string" ? b.message.trim().slice(0, 2000) : "";
   const profile = parseChatProfile(b);
 
   if (message.length === 0) {
-    return json({ error: "Field 'message' must be a non-empty string." }, 400);
+    return json({ error: "Field 'message' must be a non-empty string." }, 400, request, env);
   }
 
   // Deterministic keyword-matched fallback — always available, no binding needed.
@@ -350,11 +410,17 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
 
   // No AI binding → deterministic answer (or polite off-topic refusal).
   if (!env.AI) {
-    return json({
-      response: det.response,
-      suggestions: det.suggestions,
-      source: "deterministic",
-    }, 200, { "Cache-Control": "no-store" });
+    return json(
+      {
+        response: det.response,
+        suggestions: det.suggestions,
+        source: "deterministic",
+      },
+      200,
+      request,
+      env,
+      { "Cache-Control": "no-store" },
+    );
   }
 
   const profileContext = profile
@@ -425,6 +491,8 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
           source: inScope ? "ai" : "deterministic",
         },
         200,
+        request,
+        env,
         { "Cache-Control": "no-store" },
       );
     } catch (err) {
@@ -448,6 +516,8 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext): Pr
       ai_error: lastError || "AI model failed",
     },
     200,
+    request,
+    env,
     { "Cache-Control": "no-store" },
   );
 }
